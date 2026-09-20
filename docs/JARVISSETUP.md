@@ -74,3 +74,21 @@ Back up development data before migration experiments. Future production recover
 ## Future setup chapters — not implemented
 
 VPS; domain/DNS; TLS; hardened PostgreSQL roles; device enrollment; passkeys; voice/wake word; OpenAI; LiveKit; Twilio; remote desktop; Tailscale; installers; updater; backups; monitoring; global security lockdown; recovery. These require later implementations and explicit provider/OS setup. No credentials for these systems are needed now.
+
+## Future VPS deployment constraint — planning only
+
+The initial owner-selected baseline is **InterServer, 1 Slice, New Jersey / US East**, running **Ubuntu 24.04 LTS** with **1 vCPU, 2,048 MB RAM, 40 GB SSD and 2,000 GB/month transfer**. Planned hostname: `jarvis-core-01`; region label: `us-east-nj`. These are requirements supplied by the owner, not a claim that a server has been purchased, provisioned or benchmarked. No VPS deployment or Prompt #11 work is part of Phase 1.
+
+Future deployment must support this constrained machine:
+
+- Configure approximately **2–4 GB swap** as a safety margin; sustained swapping is an upgrade signal, not a replacement for RAM.
+- Tune PostgreSQL for low memory: bound connections, pool sizes, per-query memory, shared buffers and maintenance jobs against a measured total-memory budget. Do not carry development superuser credentials into deployment.
+- Keep Node/Core memory controlled with measured heap/process limits, bounded concurrency and bounded queues. Reject, queue or degrade nonessential work under pressure; never permit unbounded backlogs or memory exhaustion.
+- Minimize Docker and service overhead. Start only essential Core/PostgreSQL/supporting services; keep builds, browser automation workers, model inference and other heavy processing off the starter VPS unless later capacity testing explicitly permits them.
+- Set strict log rotation and retention, with size limits. Keep encrypted backups off-box, verify restores and budget temporary backup/migration disk usage.
+- Monitor RAM, swap, disk space, OOM events, CPU and service/database health. Alert on persistent pressure before service loss; provide backpressure and graceful shutdown/recovery.
+- Preserve portable configuration, PostgreSQL migrations and externalized secrets so a move to **4 GB+ RAM** or a replacement host needs no architectural redesign.
+
+Provisional upgrade triggers for future deployment validation: any OOM kill or resource-driven restart; available RAM below 15% for 15 minutes; swap above 25% with sustained paging for 15 minutes; CPU above 80% for 30 minutes with growing queues or missed latency targets; disk above 75% or forecast to exhaust within 30 days; or monthly transfer above 80% of the allowance. Tune these starting thresholds using measured workload data before go-live. Crossing a trigger requires load shedding/capacity review and, where sustained, a larger plan. Do not automatically purchase an upgrade.
+
+Before that future deployment, complete owner/device authentication, production database role separation, TLS/private networking, credential rotation, backup/restore and monitoring requirements described in SECURITY. The current bootstrap-token loopback service is not an Internet-ready deployment.
