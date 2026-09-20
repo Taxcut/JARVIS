@@ -15,3 +15,7 @@
 | 2026-09-19 | Source exports within private workspace                            | Single contract source and direct build-tool resolution; packages are not separately published                       |
 
 Changes to authorization, persistence or protocol compatibility require a new dated decision and updated tests/security documentation. Future implementation must preserve the separate background runtime, private device keys, AURA API boundary and clean first-run state.
+
+## 2026-09-19: Hosted CI failure is not a successful acceptance result
+
+Both checked-in workflows validate locally, but GitHub rejects runs before creating jobs (`startup_failure` / `BuildFailed`). Preserve the private repository and hosted-runner configuration, record exact evidence, and require owner/GitHub resolution. Do not switch repository visibility, buy credits, install self-hosted runners or label Windows validation successful to work around the blocker.

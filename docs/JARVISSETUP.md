@@ -50,6 +50,8 @@ cargo build --workspace --locked
 pnpm --filter @jarvis/desktop tauri build --no-bundle
 ```
 
+`pnpm --filter @jarvis/core start` runs the compiled Core after `pnpm build`. For a local macOS app bundle, use `pnpm --filter @jarvis/desktop tauri build --debug --bundles app`. This is a development bundle, not a signed/notarized installer.
+
 Build the desktop frontend before direct Cargo builds from a fresh checkout. `pnpm build` includes it. `pnpm test` is deterministic unit/contract/API validation; `pnpm test:integration` starts and cleans up an isolated real PostgreSQL container. Docker must be running. No tests reset your development database.
 
 Default CI validates TypeScript and real PostgreSQL on Linux and Rust/native compilation on macOS and Windows. The manual package workflow compiles unsigned release executables without installers. Signing, notarization, signed installers and automatic updates are not implemented.
