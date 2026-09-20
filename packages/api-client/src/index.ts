@@ -33,6 +33,8 @@ export function createClient(token: string, base = 'http://127.0.0.1:4310') {
   ): Promise<T> {
     const response = await fetch(`${url.origin}/api/v1/${path}`, {
       method,
+      redirect: 'error',
+      credentials: 'omit',
       headers: {
         Authorization: `Bearer ${token}`,
         ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}),

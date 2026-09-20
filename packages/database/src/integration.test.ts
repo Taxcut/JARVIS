@@ -29,6 +29,7 @@ const event = () => ({
   metadata: {},
 });
 beforeAll(async () => {
+  await expect(db.ready()).rejects.toThrow();
   await db.migrate();
   await db.migrate();
 });
@@ -60,9 +61,11 @@ it('stores audited setup atomically, enforces append-only behavior and UTC', asy
   ).rejects.toThrow();
   await expect(db.db.execute(sql`delete from audit_events`)).rejects.toThrow();
   await expect(db.db.execute(sql`truncate audit_events`)).rejects.toThrow();
+  await db.db.update(setupState).set({ coreVerified: false });
   const before = (await db.db.select().from(setupState))[0]?.updatedAt;
   await expect(db.verifyCore(input)).rejects.toThrow();
   expect((await db.db.select().from(setupState))[0]?.updatedAt).toEqual(before);
+  expect((await db.setup()).core).toBe('not_configured');
 });
 it('persists events and rejects unknown metadata without inserting it', async () => {
   await db.appendEvent({ ...event(), type: 'security.lockdown' });

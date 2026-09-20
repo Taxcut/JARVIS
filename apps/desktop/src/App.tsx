@@ -101,6 +101,7 @@ export function App() {
           onClick={() => {
             setPage('Core');
             setSetup(false);
+            setError('');
           }}
           aria-label="JARVIS home"
         >
@@ -119,6 +120,7 @@ export function App() {
               onClick={() => {
                 setPage(name);
                 setSetup(false);
+                setError('');
               }}
             >
               <span className="nav-symbol" aria-hidden="true">
@@ -178,6 +180,7 @@ export function App() {
                 >
                   <label htmlFor="core-url">Core address</label>
                   <input
+                    disabled={busy}
                     id="core-url"
                     type="url"
                     value={base}
@@ -190,6 +193,7 @@ export function App() {
                   />
                   <label htmlFor="token">Local access token</label>
                   <input
+                    disabled={busy}
                     id="token"
                     type="password"
                     autoComplete="off"
@@ -290,7 +294,11 @@ export function App() {
                 {[
                   [
                     'Core',
-                    state?.core === 'verified' ? 'Verified' : 'Not configured',
+                    state?.core === 'verified'
+                      ? 'Verified'
+                      : state
+                        ? 'Not configured'
+                        : 'Not connected',
                     'Connection & database',
                   ],
                   ['Devices', 'No enrolled devices', 'Trusted device network'],
