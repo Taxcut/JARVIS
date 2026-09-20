@@ -52,3 +52,11 @@ Use standards-based SimpleWebAuthn ceremonies in the system browser on macOS and
 - Recovery requires both a one-use high-entropy code and an already-trusted device key, followed by new-passkey registration. Loss of every trusted device remains an explicit offline-recovery limitation. Recovery replaces prior passkeys/session authority.
 - Preserve historical Phase 1 CI evidence and non-blocking Node-action warnings. Phase 2 requires fresh hosted Linux/macOS/Windows evidence; physical biometric validation is separately identified.
 - Correct the future wake-word architecture to sherpa-onnx; do not implement voice or Prompt #3.
+
+## 2026-09-20: Reconcile the owner configuration without activating future systems
+
+Incorporate the sanitized `jarvis setup info.txt` requirements in OWNER_CONFIGURATION. Preserve America/New_York, `bm_george`, weekday noon, Saturday 07:00 and the remaining weekend window, plus five call retries with counting semantics still to clarify. Missing retry interval and undefined “BOTH” fallback remain future phone-phase questions. Preserve the existing InterServer decision where source fields are blank. No schedules, voice models, provider integrations, purchases or fake readiness records are created.
+
+Keep supplied provider secrets in existing private local configuration only; track blank variable names and distinguish presence from verified access. A phone value that fails E.164 validation is not imported or guessed. Kokoro output remains a separate future adapter from OpenAI Realtime conversation. The disconnected UI must describe unknown devices/security as requiring sign-in, rather than asserting that no owner/devices exist.
+
+[Phase 2 Validate](https://github.com/Taxcut/JARVIS/actions/runs/35530976129) succeeded on `16dfe950315d1d63aa7e30cb7dae78dbaa886c8c` for Linux TypeScript/database and both macOS/Windows native jobs. Preserve this evidence and rerun hosted validation for the UI correction. Owner-deferred Keychain/restart/sign-in/recovery/native GUI checks and Windows physical testing prevent a complete Phase 2 acceptance claim. Keep the PR draft and unmerged; do not start Prompt #3. Node 20 action warnings remain future maintenance.

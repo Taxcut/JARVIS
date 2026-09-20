@@ -34,7 +34,7 @@ A single bounded minute maintenance task expires security records, clears challe
 
 ## Preserved future boundaries
 
-- Voice: local **sherpa-onnx**, wake arbitration and realtime conversation; documentation only in this phase.
+- Voice: local **sherpa-onnx**, wake arbitration and OpenAI Realtime conversation, with a separate planned Kokoro synthesis adapter for the owner-selected `bm_george` output; documentation only in this phase. See VOICE and OWNER_CONFIGURATION.
 - Remote: native capture/encoding/secure transport; no implementation.
 - Computer control: future native APIs, Accessibility/UI Automation and narrowly authorized tool adapters. No privileged IPC exists today.
 - Browser automation, LiveKit/Twilio phone/SMS, semantic memory/pgvector, missions and automations remain separate later work.

@@ -2,7 +2,7 @@
 
 ## Current scope
 
-Phase 2 runs locally with single-owner passkeys, trusted devices, native secure storage and realtime security state. It is not ready for public hosting. No computer execution or paid provider accounts are enabled.
+Phase 2 runs locally with single-owner passkeys, trusted devices, native secure storage and realtime security state. It is not ready for public hosting. No computer execution or paid provider integrations are enabled. Owner-reported existing accounts do not establish integration readiness.
 
 ## Prerequisites
 
@@ -104,3 +104,9 @@ On restart, the desktop resumes from native secure storage. If the session expir
 `JARVIS_RP_ID` defaults to `localhost`; `JARVIS_AUTH_ORIGIN` defaults to `http://localhost:4310`. If changing the Core port, also change the exact auth origin. Core validates HTTPS or local browser origins and RP matching. The Phase 2 native browser adapter uses localhost on the Core port; non-local authentication hosting is reserved for the future deployment adapter. Never weaken validation or expose the development Core to work around passkey errors.
 
 Physical verification: macOS Keychain has a real isolated roundtrip test (`cargo test -p jarvis-identity native_store_roundtrip -- --ignored`). The explicit operator example `owner_setup` exercises the same native browser adapter and can test `bootstrap`, `login` or `resume`; bootstrap credentials must be passed in the environment, never a command argument. It prints only success/status. Native GUI validation and Touch ID outcome are recorded in IMPLEMENTATION_STATUS. On the Gaming PC, later verify a real Windows Hello registration/assertion, Credential Manager persistence across restart and revoked-session rejection; hosted Windows compilation does not establish those physical results.
+
+## Owner configuration ingestion
+
+[OWNER_CONFIGURATION](OWNER_CONFIGURATION.md) records the sanitized owner document, provider readiness, voice/timezone/wake-up preferences and unresolved future phone settings. Supplied provider credentials are held only in the ignored local `.env` with restrictive permissions; `.env.example` lists blank names for future use. Phase 2 does not use these credentials or validate provider access. Preserve existing database/bootstrap values and native secure storage; do not recreate `.env` or reset ownership. The owner's phone requires private E.164 format confirmation before import. No provider purchase, deployment, model installation or operational schedule is part of this ingestion.
+
+The owner explicitly deferred Keychain approval and associated native restart/sign-in/UI and recovery-code validation until the final prompt. Resume that physical checklist only when the owner is ready; prepare Core/database/native app first and request only the OS/passkey action. Never replace native storage with plaintext or treat automated recovery tests as the owner's recovery setup.

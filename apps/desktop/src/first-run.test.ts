@@ -7,14 +7,16 @@ it('renders an honest disconnected first run without operational fixtures', () =
   for (const text of [
     'Begin Setup',
     'Not connected',
-    'No enrolled devices',
+    'Sign in to view devices',
     'No missions yet',
     'Voice not configured',
     'Phone Link not configured',
-    'Setup required',
+    'Sign in to view security',
   ])
     expect(html).toContain(text);
   expect(html).not.toContain('Connected · database ready');
   expect(html).not.toContain('Core verified');
   expect(html).not.toContain('test fixture');
+  expect(html).not.toContain('No enrolled devices');
+  expect(html).not.toContain('No devices enrolled');
 });

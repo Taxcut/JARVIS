@@ -347,7 +347,7 @@ export function App() {
                   <div className="hero-note">
                     {identity.snapshot
                       ? `${identity.snapshot.devices.filter((d) => d.trustState === 'trusted').length} trusted devices. No execution available.`
-                      : 'No devices enrolled. No actions authorized.'}
+                      : 'Sign in to view your trusted devices. Execution unavailable.'}
                   </div>
                 </div>
                 <div className="presence" aria-hidden="true">
@@ -367,18 +367,20 @@ export function App() {
                 {[
                   [
                     'Core',
-                    state?.core === 'verified'
-                      ? 'Verified'
-                      : state
-                        ? 'Not configured'
-                        : 'Not connected',
+                    identity.sync === 'LIVE'
+                      ? 'Connected'
+                      : state?.core === 'verified'
+                        ? 'Verified'
+                        : state
+                          ? 'Not configured'
+                          : 'Not connected',
                     'Connection & database',
                   ],
                   [
                     'Devices',
                     identity.snapshot
                       ? `${identity.snapshot.devices.filter((d) => d.trustState === 'trusted').length} trusted devices`
-                      : 'No enrolled devices',
+                      : 'Sign in to view devices',
                     'Trusted device network',
                   ],
                   [
@@ -390,7 +392,8 @@ export function App() {
                   ['Missions', 'No missions yet', 'Planning & execution'],
                   [
                     'Security',
-                    identity.snapshot?.owner.securityState ?? 'Setup required',
+                    identity.snapshot?.owner.securityState ??
+                      'Sign in to view security',
                     'Identity & permissions',
                   ],
                 ].map(([name, status, description]) => (
