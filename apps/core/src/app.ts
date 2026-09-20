@@ -1,5 +1,8 @@
 import Fastify, { LogController } from 'fastify';
 import cors from '@fastify/cors';
+import { IdentityStore } from './identity-store.js';
+import { IdentityService } from './identity.js';
+import { registerIdentity, securityStatus } from './identity-routes.js';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Environment } from '@jarvis/config';
 import type { Database } from '@jarvis/database';
@@ -19,11 +22,14 @@ const origins = [
 ];
 export async function createApp(
   config: Environment,
-  database: Pick<Database, 'ready' | 'setup' | 'verifyCore'>,
+  database: Pick<Database, 'ready' | 'setup' | 'verifyCore'> &
+    Partial<Pick<Database, 'pool'>>,
 ) {
+  if (!database.pool && config.NODE_ENV !== 'test')
+    throw new Error('Production identity persistence is required');
   const app = Fastify({
     ajv: { customOptions: { removeAdditional: false } },
-    bodyLimit: 16384,
+    bodyLimit: 65536,
     requestTimeout: 10000,
     genReqId: () => randomUUID(),
     logController: new LogController({ disableRequestLogging: true }),
@@ -39,6 +45,10 @@ export async function createApp(
             ],
           },
   });
+  const identity = database.pool
+    ? new IdentityService(new IdentityStore(database.pool), config)
+    : undefined;
+  const allowedOrigins = [...origins, config.JARVIS_AUTH_ORIGIN];
   app.decorateRequest('correlationId', '');
   const fail = (
     req: { id: string; correlationId: string },
@@ -68,17 +78,28 @@ export async function createApp(
       .header('x-content-type-options', 'nosniff');
   });
   await app.register(cors, {
-    origin: origins,
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'X-Correlation-ID'],
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'X-Correlation-ID',
+      'X-Jarvis-Version',
+      'X-Device-ID',
+      'X-Session-ID',
+      'X-Timestamp',
+      'X-Nonce',
+      'X-Signature',
+    ],
     exposedHeaders: ['X-Request-ID', 'X-Correlation-ID'],
     maxAge: 600,
   });
   app.addHook('onRequest', async (req, reply) => {
-    if (req.headers.origin && !origins.includes(req.headers.origin))
+    if (req.headers.origin && !allowedOrigins.includes(req.headers.origin))
       return reply
         .code(403)
         .send(fail(req, 'ORIGIN_DENIED', 'Origin is not permitted.'));
+    if (identity) return;
     if (req.method === 'GET' && req.url === '/api/v1/health') return;
     const provided = Buffer.from(req.headers.authorization ?? '');
     const expected = Buffer.from(`Bearer ${config.JARVIS_API_TOKEN}`);
@@ -91,14 +112,16 @@ export async function createApp(
         .send(fail(req, 'UNAUTHORIZED', 'Local access token required.'));
   });
   app.setErrorHandler((err, req, reply) => {
+    const security = securityStatus(err);
     const status =
-      err instanceof Error &&
+      security?.status ??
+      (err instanceof Error &&
       'statusCode' in err &&
       typeof err.statusCode === 'number' &&
       err.statusCode >= 400 &&
       err.statusCode < 500
         ? err.statusCode
-        : 500;
+        : 500);
     req.log.warn(
       { requestId: req.id, correlationId: req.correlationId, status },
       'Request failed',
@@ -108,13 +131,15 @@ export async function createApp(
       .send(
         fail(
           req,
-          status === 500 ? 'INTERNAL_ERROR' : 'INVALID_REQUEST',
+          security?.code ??
+            (status === 500 ? 'INTERNAL_ERROR' : 'INVALID_REQUEST'),
           status === 500
             ? 'The request could not be completed.'
             : 'The request is invalid.',
         ),
       );
   });
+  if (identity) await registerIdentity(app, identity);
   app.setNotFoundHandler((req, reply) =>
     reply.code(404).send(fail(req, 'NOT_FOUND', 'Route not found.')),
   );
@@ -146,7 +171,7 @@ export async function createApp(
       name: 'JARVIS Core',
       version: '0.1.0',
       protocolVersion: 1,
-      phase: 1,
+      phase: 2,
     }),
   );
   app.get('/api/v1/setup/status', async () =>
@@ -171,8 +196,8 @@ export async function createApp(
           id: randomUUID(),
           type: 'core.setup.verified',
           timestamp: new Date().toISOString(),
-          actor: 'local-bootstrap-operator',
-          deviceId: null,
+          actor: req.identity?.ownerId ?? 'local-bootstrap-operator',
+          deviceId: req.identity?.deviceId ?? null,
           correlationId: req.correlationId,
           requestId: req.id,
           capability: null,

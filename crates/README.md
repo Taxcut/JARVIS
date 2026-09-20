@@ -1,5 +1,7 @@
 # Native boundaries
 
-`runtime` defines the honest not-configured runtime contract used by the desktop shell. It performs no actions. Closing the desktop closes only this UI process; an independent background runtime/service is future work, not currently installed.
+`identity` implements device Ed25519 keys, Keychain/Credential Manager persistence, canonical signed requests, secure session resume and the system-browser passkey adapter. Its narrow desktop commands never export private keys or refresh credentials. Explicit in-memory stores exist only in tests; production has no plaintext fallback.
 
-Future `device`, `security`, `audio`, `wakeword`, `capture`, and `remote` crates are documented boundaries, not empty packages. Device enrollment will bind public keys to owners; private keys stay in Keychain on macOS and DPAPI/Credential Manager on Windows. Native execution must verify scoped, expiring, single-use authorization outside the model. Audio, capture and remote OS permissions will be requested only when implemented and explicitly enabled.
+`runtime` remains an honest inactive contract. It performs no actions. An independent background service, computer execution, audio/sherpa-onnx, capture and remote access are future phases. Future execution must verify separate scoped, expiring, single-use authorization outside the model. A durable approval or trusted identity is never execution authority.
+
+The ignored native-store roundtrip test uses an isolated entry and removes it. The `owner_setup` example is an explicit local operator validation tool that uses the same native adapter as the desktop, requires real owner passkey confirmation, and never prints credentials. Physical platform outcomes are tracked separately in IMPLEMENTATION_STATUS.

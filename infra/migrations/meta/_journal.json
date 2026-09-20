@@ -8,6 +8,20 @@
       "when": 1789866000000,
       "tag": "0000_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789952400000,
+      "tag": "0001_identity_sync",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789970400000,
+      "tag": "0002_device_key_constraints",
+      "breakpoints": true
     }
   ]
 }

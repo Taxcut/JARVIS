@@ -39,3 +39,16 @@ A temporary workflow containing only a single Ubuntu echo step reproduced the sa
 The owner reports resolving account-side Actions eligibility/billing by correcting the Actions budget/payment setup. Preserve the earlier zero-job diagnostics as history, clearly marked resolved. The successful run independently verifies restored hosted execution; the exact internal GitHub cause remains unexposed and is not inferred beyond that evidence.
 
 Record the current Node 20 deprecation notices for checkout/setup-node/pnpm setup actions as non-blocking future maintenance. Do not change dependencies or workflow versions during this closure. The InterServer constrained-VPS plan remains documentation only; nothing is deployed.
+
+## 2026-09-20: Phase 2 identity and synchronization
+
+Use standards-based SimpleWebAuthn ceremonies in the system browser on macOS and Windows. Native Rust owns Ed25519 device keys and refresh credentials in OS secure storage. Browser completion and desktop redemption use separate short-lived one-use secrets; only the native device can redeem session material. Exact RP/origin validation and required user verification remain enabled. PostgreSQL provides durable challenges, nonces, purpose-bound grants and transactional ordered sync events. Physical Touch ID and Windows Hello validation will be recorded separately from automated tests. No execution capability is introduced.
+
+- Keep the existing `users` anchor as the canonical singleton owner; enforce uniqueness in SQL rather than introduce tenants or generic RBAC.
+- Use SimpleWebAuthn 14 with required UV/resident credentials and a system-browser adapter. Native WebView WebAuthn is not a dependency. Official server/browser documentation was checked before implementation.
+- Use Ed25519 via maintained native/library implementations and keyring 4 platform stores, with a public cross-language fixture. No fallback files or raw signing IPC.
+- Serialize personal-owner security transactions with a PostgreSQL advisory lock, parameterized SQL and transactional audit/outbox. The same database supplies durable rate buckets and replay prevention; avoid Redis/Kafka.
+- Realtime batches carry safe authoritative snapshots plus ordered events. This bounds client complexity and prevents independent client state from drifting. Retention gaps force resync; sequence strings preserve bigint precision.
+- Recovery requires both a one-use high-entropy code and an already-trusted device key, followed by new-passkey registration. Loss of every trusted device remains an explicit offline-recovery limitation. Recovery replaces prior passkeys/session authority.
+- Preserve historical Phase 1 CI evidence and non-blocking Node-action warnings. Phase 2 requires fresh hosted Linux/macOS/Windows evidence; physical biometric validation is separately identified.
+- Correct the future wake-word architecture to sherpa-onnx; do not implement voice or Prompt #3.

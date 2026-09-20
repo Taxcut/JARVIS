@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-native-begin"
+description = "Enables the native_begin command without any pre-configured scope."
+commands.allow = ["native_begin"]
+
+[[permission]]
+identifier = "deny-native-begin"
+description = "Denies the native_begin command without any pre-configured scope."
+commands.deny = ["native_begin"]

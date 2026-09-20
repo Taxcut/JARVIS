@@ -1,7 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "No native IPC permissions are exposed in Phase 1.",
+  "description": "Local window access to narrow native identity operations; no raw key, arbitrary signing, shell or filesystem commands.",
   "windows": ["main"],
-  "permissions": []
+  "permissions": [
+    "allow-native-status",
+    "allow-native-resume",
+    "allow-native-api",
+    "allow-native-begin",
+    "allow-native-poll"
+  ]
 }

@@ -1,23 +1,61 @@
 # Protocol v1
 
-`packages/protocol` is the Zod source of truth; schemas reject unsupported message versions and unexpected envelope fields. TypeScript types derive from schemas. `packages/schemas` provides device identity, capability/risk/decision and personality types. Rust runtime reports protocol version 1 but no device transport is implemented yet.
+Zod contracts in `packages/protocol` define versioned authentication, pairing, mutations, snapshots and realtime handshakes. Unsupported versions fail closed. Phase 2 extends the coordinated private desktop/Core contract; Phase 1 clients must upgrade alongside Core (system phase is now 2 and setup states have expanded). No public compatibility promise is made for an old private preview client.
 
-## HTTP API
+## HTTP surface
 
-| Route                          | Authorization          | Behavior                                                                  |
-| ------------------------------ | ---------------------- | ------------------------------------------------------------------------- |
-| GET /api/v1/health             | None                   | Process liveness only                                                     |
-| GET /api/v1/readiness          | Bootstrap bearer token | Checks PostgreSQL connection and schema version; 503 on failure           |
-| GET /api/v1/system/version     | Bootstrap bearer token | Core, application, protocol and phase versions                            |
-| GET /api/v1/setup/status       | Bootstrap bearer token | Persisted Core verification; overall configured remains false             |
-| POST /api/v1/setup/core/verify | Bootstrap bearer token | Empty object only; real dependency check plus atomic progress/audit write |
+| Route                                                                          | Authorization / behavior                                                            |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| GET /api/v1/health                                                             | Public minimal process liveness                                                     |
+| GET /api/v1/readiness, /system/version, /setup/status                          | Signed session; bootstrap bearer allowed only before owner creation                 |
+| POST /api/v1/setup/core/verify                                                 | Same boundary; empty JSON object; atomic real check/audit                           |
+| POST /api/v1/auth/prepare                                                      | Versioned bootstrap/login/recovery; signed session required for step-up/add         |
+| POST /api/v1/auth/activate, /auth/redeem                                       | Separate native secret + Ed25519 proof over immutable server challenge              |
+| POST /api/v1/auth/browser/context, /auth/browser/options, /auth/browser/verify | Browser secret + exact configured Origin; WebAuthn UV required                      |
+| GET /auth, /auth/browser.js, /auth/style.css                                   | Local passkey UI/assets; no session material                                        |
+| POST /api/v1/enrollment/prepare                                                | Versioned one-use pairing secret and candidate; activation still requires key proof |
+| POST /api/v1/session/refresh                                                   | Signed request with current refresh credential; rotates both secrets                |
+| GET /api/v1/identity/snapshot                                                  | Signed session, safe authoritative owner projection                                 |
+| POST /api/v1/identity/mutate                                                   | Versioned discriminated mutation, scoped grant where required, optimistic revision  |
+| POST /api/v1/sync/ticket                                                       | Signed session; 30-second one-use socket ticket                                     |
+| GET /api/v1/realtime                                                           | WebSocket; versioned ticket handshake within five seconds                           |
 
-No device enrollment or business actions are exposed. Their setup status is explicitly `not_implemented`. API response shapes are runtime-validated. Errors use `{error:{code,message,requestId,correlationId}}`; validation/auth/not-found/dependency/unexpected errors use appropriate 4xx/5xx codes and never echo internal exceptions.
+Every HTTP response has server-generated request and validated correlation UUIDs. Errors use `{error:{code,message,requestId,correlationId}}`; fixed messages never echo secrets or raw database/WebAuthn errors. Authentication failure is 401, forbidden/step-up/lockdown 403, malformed contracts 400, stale revisions 409, limits 429 and dependency/unexpected errors 5xx. CORS is an allowlist, not authentication. No cookie credentials are used.
 
-Every response carries `X-Request-ID` and `X-Correlation-ID`. Request IDs are generated per request; a valid incoming correlation UUID is retained, otherwise a new one is generated. They support tracing, never confer authority. Structured logs and persisted setup events reference them.
+## Canonical device request
 
-## Future device transport
+All authenticated device requests carry `Authorization: Bearer <access>` (refresh on the refresh route), `X-Jarvis-Version: 1`, `X-Device-ID`, `X-Session-ID`, `X-Timestamp` (13-digit Unix milliseconds), `X-Nonce` (32 random bytes, unpadded base64url), `X-Correlation-ID` and `X-Signature` (64-byte Ed25519, unpadded base64url).
 
-The heartbeat and acknowledgement contracts document device → Core and Core → device directions. They are schemas only, not an open enrollment or messaging endpoint. Future handshakes must authenticate device key possession, trust and revocation before accepting traffic. Execution messages require separate signed/scoped/expiring authorization and replay protection; an event or policy decision is not an execution command.
+Sign the UTF-8 bytes of these newline-separated fields, with **no trailing newline**:
 
-Breaking changes require a new envelope version and API major path. Unknown versions fail closed; negotiation must be explicit and capability-aware. Additive HTTP response fields can be introduced only with coordinated client compatibility; current strict schemas intentionally detect drift. Versioned fixtures and contract tests must accompany changes. Audit events retain their version at write time.
+```text
+JARVIS-REQUEST-V1
+device UUID
+session UUID
+uppercase GET or POST
+exact /api/v1/ lowercase path
+lowercase hex SHA-256 of exact UTF-8 body (empty for GET)
+timestamp
+nonce
+correlation UUID
+```
+
+Canonical paths contain only lowercase letters, digits, slash and hyphen. Queries, percent encodings, fragments and ambiguous variants are rejected. Do not reserialize the body after signing. Proxy/Host headers are not signed. Native/Core interoperability shares a public test fixture. ±60-second skew and a unique session/nonce hash protect against replay; nonce retention exceeds the complete acceptance window.
+
+Proof of possession signs `JARVIS-PROOF-V1`, ceremony UUID, server challenge, device UUID and unpadded base64url public key, likewise joined by newlines with no trailing newline. The server-persisted ceremony fixes all inputs. Browser and redemption tokens are different; only native owns redemption proof/session material.
+
+## Mutations and authority
+
+The discriminated mutation schema lists owner updates; device/passkey rename/revoke; session revoke; exact-state lockdown; recovery regeneration; pairing creation/decision; approval creation/decision. Mutable resources require the last observed revision. A 409 requires review of current authoritative data, never silent overwrite. Sensitive actions consume exact purpose/target/session grants. Approval creation/decision idempotency keys bind their original context and cannot issue execution authority.
+
+Setup always reports `configured: false`. Core verification, owner presence, device enrollment and recovery availability are real database state. Current-device trust is resolved from the signed session/snapshot. Voice, phone and system testing remain future/unconfigured.
+
+## Realtime
+
+Client handshake: `{version:1,ticket,lastSequence}`. Sequence values are decimal strings to preserve 64-bit precision. A ticket is obtained through native signed IPC, held only in UI memory and never placed in the URL. Server messages are `snapshot`, `update` or `heartbeat`, all version 1.
+
+A snapshot/update includes `fromSequence`, ordered `events` and a current safe `snapshot`. Each event carries UUID, monotonic sequence, type, schema version, owner/resource UUID, resource revision, timestamp, correlation ID and `{changed:true}`. Payloads contain no credentials. Events are committed transactionally with state. Sequence allocation may contain rollback gaps; order is monotonic, not assumed contiguous. The batch cursor binds the entire missed interval.
+
+Clients apply authoritative snapshots, ignore duplicate update batches, validate increasing event sequences/unique IDs and reject mismatched batch cursors. An unavailable retention window, future cursor or detected ordering fault causes a full snapshot. Fresh app starts begin at sequence zero. Socket heartbeat is 15 seconds; the UI declares stale after 40 seconds and reconnects with capped exponential backoff. CONNECTING/SYNCING/LIVE/DEGRADED/OFFLINE reflect actual transport state. No periodic product-state polling is used; only an explicitly initiated browser ceremony uses short bounded completion polling.
+
+The original heartbeat/ack schemas remain future runtime boundaries. Sync events and approval decisions are never commands. Breaking public API generations will require a new explicit envelope/path and reviewed compatibility fixtures.

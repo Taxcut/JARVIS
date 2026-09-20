@@ -1,8 +1,14 @@
 # Implementation status
 
-## Current Phase
+## Phase 2 — in progress
 
-Phase 1 — Foundation / Prompt #1 **COMPLETE**. Local verification and hosted Linux/macOS/Windows validation satisfy the Phase 1 acceptance criteria. The former hosted-CI blocker is resolved. Prompt #2 has not started. Last verified 2026-09-20 on Apple Silicon macOS, Node 24.21.0, pnpm 12.4.2, Rust 1.98.1 and Docker 29.8.0.
+Implemented owner/passkey/browser ceremonies, native secure identity and sessions, signing/replay protection, pairing/step-up/recovery/revocation/lockdown, durable approval records, transactional WebSocket replay/resync and real identity screens. No execution is enabled.
+
+Current local evidence: `pnpm check` passed (31 unit/contract/API/render tests and builds); real PostgreSQL integration passed (17 tests, including multi-client/restart/adversarial flows and loss/recovery of PostgreSQL LISTEN); native fmt/check/clippy/tests/build passed, including the cross-language signing fixture (six automated Rust tests; physical store test separately invoked); real macOS Keychain isolated roundtrip passed. Real owner registration completed in Safari with owner-confirmed macOS passkey verification; native redemption and a signed snapshot succeeded. Restart/resume then required macOS Keychain approval. The owner explicitly deferred that approval and associated native sign-in/UI validation until the final prompt; do not weaken storage or request it again during this phase. Local security/migration/protocol/realtime/empty-state reviews and secret scan are complete. Fresh hosted Phase 2 validation remains pending. Windows Hello physical validation remains pending on the Gaming PC. This is not a Phase 2 completion claim.
+
+## Preserved Phase 1 closure
+
+Phase 1 — Foundation / Prompt #1 **COMPLETE**. Local verification and hosted Linux/macOS/Windows validation satisfy the Phase 1 acceptance criteria. The former hosted-CI blocker is resolved. Prompt #2 — Identity, security and realtime sync is **IN PROGRESS** on `feat/phase2-identity-sync`. No Phase 2 acceptance claim is made yet. Last verified 2026-09-20 on Apple Silicon macOS, Node 24.21.0, pnpm 12.4.2, Rust 1.98.1 and Docker 29.8.0.
 
 ## Completed
 
@@ -17,11 +23,11 @@ Phase 1 — Foundation / Prompt #1 **COMPLETE**. Local verification and hosted L
 
 ## In Progress
 
-None for Prompt #1. All Phase 1 acceptance criteria are satisfied; no active external blocker remains.
+Phase 2 implementation and adversarial verification. Phase 1 remains complete.
 
 ## Not Started
 
-Phase 2+ identity/passkeys, enrollment, background runtime execution, approvals/signing/replay protection, voice/wake word, missions, memory, automations, remote, phone/SMS, AURA, production deployment, installers/updater and operational backup services.
+Phase 3+ background runtime execution, voice/wake word, missions, memory, automations, remote, phone/SMS, AURA, production deployment, installers/updater and operational backup services.
 
 ## Known Issues
 
@@ -43,7 +49,7 @@ The API client rejects redirects and non-loopback endpoints. Setup fields cannot
 
 ## Next Recommended Work
 
-Prompt #1 is closed. Await a separate instruction before starting Prompt #2 or any deployment work. Track the Actions Node 20 deprecation notices as future maintenance.
+Complete the owner-authorized Prompt #2 implementation and validation; do not start Prompt #3 or deployment work. Track the Actions Node 20 deprecation notices as future maintenance.
 
 ## Verification Commands and Results
 
@@ -61,7 +67,7 @@ Prompt #1 is closed. Await a separate instruction before starting Prompt #2 or a
 
 Use `pnpm rust:check` and `cargo build --workspace --locked` after `pnpm build`. Use `pnpm --filter @jarvis/core dev` plus `pnpm desktop` for native development. See JARVISSETUP for environment generation and recovery details.
 
-The development database contains one real Core verification audit event from verification and no users or devices. A new clone/database starts empty. Test fixtures exist only inside disposable test databases.
+At Phase 1 closure, the development database contained one real Core verification audit event and no users or devices. Phase 2 owner-authorized onboarding has now created one real owner, one trusted Mac, one active passkey and one session. No recovery codes have yet been generated; that requires the deferred owner verification. No test fixtures entered the development database. A new clone/database starts empty. Test fixtures exist only inside disposable test databases.
 
 ## Hosted closure evidence
 
