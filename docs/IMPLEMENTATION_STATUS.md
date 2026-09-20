@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 1 — Foundation implemented and locally verified. **Hosted CI is externally blocked; Phase 1 is not declared fully complete.** Last verified 2026-09-20 on Apple Silicon macOS, Node 24.21.0, pnpm 12.4.2, Rust 1.98.1 and Docker 29.8.0.
+Phase 1 — Foundation / Prompt #1 **COMPLETE**. Local verification and hosted Linux/macOS/Windows validation satisfy the Phase 1 acceptance criteria. The former hosted-CI blocker is resolved. Prompt #2 has not started. Last verified 2026-09-20 on Apple Silicon macOS, Node 24.21.0, pnpm 12.4.2, Rust 1.98.1 and Docker 29.8.0.
 
 ## Completed
 
-- Private `Taxcut/JARVIS`, `main` and origin; verified code checkpoint `0875424` pushed after initial `8c83799`.
+- Private `Taxcut/JARVIS`, `main` and origin; [Validate #5](https://github.com/Taxcut/JARVIS/actions/runs/35492241746) passed on `8194079f314014a21df9b8db17e7af805f0f3eda`. Closure changes are documentation only.
 - Nine-project pnpm workspace; compiled Fastify Core and React/Vite desktop; Tauri 2/Rust workspace and original icon.
 - Zod configuration, protocol v1, device identity, personality, event and API schemas; typed client.
 - Fail-closed capability/risk policy with ALLOW/ASK/DENY, revocation/lockdown inputs and no execution authority.
@@ -17,7 +17,7 @@ Phase 1 — Foundation implemented and locally verified. **Hosted CI is external
 
 ## In Progress
 
-GitHub-hosted macOS/Windows/Linux validation cannot start. The intended workflow and a minimal one-step Ubuntu control both fail before creating jobs. This is the only remaining external Phase 1 acceptance blocker; no known local test/build failures remain. See [CI diagnostics](CI_DIAGNOSTICS.md).
+None for Prompt #1. All Phase 1 acceptance criteria are satisfied; no active external blocker remains.
 
 ## Not Started
 
@@ -25,15 +25,17 @@ Phase 2+ identity/passkeys, enrollment, background runtime execution, approvals/
 
 ## Known Issues
 
-**BLOCKED — hosted CI:** The 2026-09-20 [normal dispatch](https://github.com/Taxcut/JARVIS/actions/runs/35491618928) and [minimal control](https://github.com/Taxcut/JARVIS/actions/runs/35491676010) both returned `startup_failure` with zero jobs/check runs. Earlier attempts used synthetic `BuildFailed` metadata; current attempts identify the actual workflow path. Both workflow definitions pass actionlint. Repository permissions allow them and GitHub publicly reported Actions operational.
+No blocking Phase 1 issues. Validate #5 emitted non-blocking Node 20 deprecation warnings for `actions/checkout@v4`, `actions/setup-node@v4` and `pnpm/action-setup@v4`; GitHub reported running those actions on Node 24. Updating the action versions is future maintenance, not a Phase 1 failure. The application already targets Node 24.
 
-The minimal control excludes application code, dependencies, third-party actions and the platform matrix as the trigger. No safe repository-side fix was identified. Exact GitHub/account-side cause remains undisclosed. Billing could not be inspected because the current OAuth authorization lacks the required `user` scope; no claim is made that payment or quota caused the failure. The temporary diagnostic branch was removed without merging. Full evidence and owner-only resolution steps are in [CI_DIAGNOSTICS](CI_DIAGNOSTICS.md).
+The former CI startup failure is **RESOLVED**. The owner reports correcting account-side Actions eligibility/billing through the Actions budget/payment setup. GitHub independently confirms [Validate #5](https://github.com/Taxcut/JARVIS/actions/runs/35492241746) succeeded on `8194079f314014a21df9b8db17e7af805f0f3eda` with `typescript`, `native (macos-latest)` and `native (windows-latest)` all successful. The exact internal GitHub failure mechanism remains unexposed; no more specific cause is asserted. Historical diagnostic evidence is preserved in [CI_DIAGNOSTICS](CI_DIAGNOSTICS.md).
 
 ## External Setup Required
 
-Resolve the GitHub Actions startup failure through owner account/repository settings or GitHub Support, then run `gh workflow run validate.yml --repo Taxcut/JARVIS` and confirm all three platforms. Account-read authorization or GitHub Support may be needed to expose the startup cause. The future Gaming PC still needs real interactive Windows validation. Provider credentials, signing identities, device OS permissions and deployment infrastructure are not required for the current local foundation.
+None to close Prompt #1. Later phases still require real Gaming PC interactive testing and, as applicable, provider credentials, signing identities, device OS permissions and deployment infrastructure. These are future work, not outstanding Phase 1 acceptance items.
 
 ## Recent Important Changes
+
+2026-09-20 closure: independently verified Validate #5 and its three successful hosted jobs, recorded the owner-reported account budget/payment correction, and marked the CI blocker resolved. Documentation formatting and diff checks are the only new checks needed; the implementation and workflows are unchanged. Hosted evidence applies to `8194079f314014a21df9b8db17e7af805f0f3eda`; the closure commit only updates these records.
 
 2026-09-20 continuation: preserved all verified Phase 1 code, repeated the final local gate, inspected the safety boundaries and Git history, and isolated hosted CI failure with a minimal control. Added the owner-selected InterServer 1 Slice/2 GB future VPS baseline and resource/upgrade requirements to JARVISSETUP. No Prompt #2 or VPS deployment work started.
 
@@ -41,7 +43,7 @@ The API client rejects redirects and non-loopback endpoints. Setup fields cannot
 
 ## Next Recommended Work
 
-Unblock hosted validation and complete Prompt #1 acceptance first. Prompt #2 remains unstarted. Later planning may address owner identity, device enrollment and scoped runtime authorization only when separately requested.
+Prompt #1 is closed. Await a separate instruction before starting Prompt #2 or any deployment work. Track the Actions Node 20 deprecation notices as future maintenance.
 
 ## Verification Commands and Results
 
@@ -54,9 +56,19 @@ Unblock hosted validation and complete Prompt #1 acceptance first. Prompt #2 rem
 | Live compiled Core         | **PASSED** — compiled Core rechecked on 2026-09-20: health/readiness/version/setup 200, unauthenticated setup 401, persisted Core verification retained and overall configured false; prior invented completion rejected with 400 |
 | Native Rust                | **PASSED** — fmt, check, clippy with warnings denied, 1 runtime test and workspace build passed again on 2026-09-20                                                                                                               |
 | Native app                 | `tauri build --debug --bundles app` passed; macOS bundle launched and first-run/setup/devices UI inspected; invalid credentials showed honest failure                                                                             |
-| Workflow definitions       | actionlint 1.7.12 passed both files; hosted jobs blocked before scheduling                                                                                                                                                        |
+| Workflow definitions       | **PASSED** — actionlint 1.7.12 passed both files; [Validate #5](https://github.com/Taxcut/JARVIS/actions/runs/35492241746) passed all hosted jobs on `8194079f314014a21df9b8db17e7af805f0f3eda`                                   |
 | Secrets/Git                | **PASSED** — `.env` ignored; all three existing main commits scanned for generated local credentials and high-confidence private-key/token patterns; none detected                                                                |
 
 Use `pnpm rust:check` and `cargo build --workspace --locked` after `pnpm build`. Use `pnpm --filter @jarvis/core dev` plus `pnpm desktop` for native development. See JARVISSETUP for environment generation and recovery details.
 
 The development database contains one real Core verification audit event from verification and no users or devices. A new clone/database starts empty. Test fixtures exist only inside disposable test databases.
+
+## Hosted closure evidence
+
+| Hosted job                | Platform                | Validate #5 result                                                                            |
+| ------------------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
+| `typescript`              | `ubuntu-latest` / Linux | **SUCCESS** — install, complete TypeScript quality gate and real PostgreSQL integration tests |
+| `native (macos-latest)`   | macOS                   | **SUCCESS** — frontend build, Rust fmt/check/clippy/test/build                                |
+| `native (windows-latest)` | Windows                 | **SUCCESS** — frontend build, Rust fmt/check/clippy/test/build                                |
+
+Run: [Validate #5](https://github.com/Taxcut/JARVIS/actions/runs/35492241746); tested commit: `8194079f314014a21df9b8db17e7af805f0f3eda`; overall conclusion: **success**. The historical startup failures remain evidence of the resolved issue, not current failures. Product setup intentionally remains incomplete until future identity/device/security functionality exists; Phase 1 engineering completion does not claim those future systems are implemented.

@@ -18,6 +18,8 @@ Changes to authorization, persistence or protocol compatibility require a new da
 
 ## 2026-09-19: Hosted CI failure is not a successful acceptance result
 
+Historical decision: the startup blocker was subsequently resolved on 2026-09-20; see the closure decision below.
+
 Both checked-in workflows validate locally, but GitHub rejects runs before creating jobs (`startup_failure` / `BuildFailed`). Preserve the private repository and hosted-runner configuration, record exact evidence, and require owner/GitHub resolution. Do not switch repository visibility, buy credits, install self-hosted runners or label Windows validation successful to work around the blocker.
 
 ## 2026-09-20: Preserve the owner-selected constrained VPS baseline
@@ -26,4 +28,14 @@ Future deployment targets InterServer 1 Slice in New Jersey / US East (`jarvis-c
 
 ## 2026-09-20: Isolate CI startup without changing the foundation
 
+Historical investigation: its blocked status is superseded by the closure decision below.
+
 A temporary workflow containing only a single Ubuntu echo step reproduced the same zero-job startup failure as the intended validation workflow. This rules out JARVIS dependencies, build steps and platform matrix as the immediate trigger. Retain the validated production workflows and private repository, remove the diagnostic branch, and record hosted acceptance as blocked until GitHub/account-side startup is resolved. Billing is unknown because the current authorization lacks account-read scope; do not infer payment failure or change spending. See CI_DIAGNOSTICS for exact evidence.
+
+## 2026-09-20: Close Prompt #1 after successful hosted validation
+
+[Validate #5](https://github.com/Taxcut/JARVIS/actions/runs/35492241746) passed on `8194079f314014a21df9b8db17e7af805f0f3eda`: `typescript` on Linux, `native (macos-latest)` and `native (windows-latest)` all succeeded. Together with the recorded local acceptance evidence, this satisfies Phase 1 / Prompt #1. Close the phase with documentation-only changes; do not repeat passing implementation work or begin Prompt #2.
+
+The owner reports resolving account-side Actions eligibility/billing by correcting the Actions budget/payment setup. Preserve the earlier zero-job diagnostics as history, clearly marked resolved. The successful run independently verifies restored hosted execution; the exact internal GitHub cause remains unexposed and is not inferred beyond that evidence.
+
+Record the current Node 20 deprecation notices for checkout/setup-node/pnpm setup actions as non-blocking future maintenance. Do not change dependencies or workflow versions during this closure. The InterServer constrained-VPS plan remains documentation only; nothing is deployed.
