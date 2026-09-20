@@ -12,7 +12,23 @@ Incorporated the sanitized owner configuration in [OWNER_CONFIGURATION](OWNER_CO
 
 The owner has one real registration/native signed snapshot verification. Additional physical passkey assertion, Keychain approval, native restart/resume, recovery-code generation/use and authenticated GUI validation remain owner-deferred. Automated integration covers these security flows, but is not a physical acceptance substitute. Windows physical validation is also pending. The draft PR remains unmerged and Phase 2 is not declared complete. Prompt #3 is not started.
 
-Continuation checks passed: three targeted desktop rendering/identity/sync tests, desktop strict typecheck and production build, targeted ESLint and diff checks. A fresh hosted run is required for the UI correction; results will be recorded after push.
+Continuation checks passed: three targeted desktop rendering/identity/sync tests, desktop strict typecheck and production build, targeted ESLint and diff checks. [Fresh hosted validation](https://github.com/Taxcut/JARVIS/actions/runs/35545676708) passed Linux TypeScript/database, macOS native and Windows native on `c61e99e1855f31c0161c06832a04bac73b083f37`. The built browser first-run screen was inspected. Supplied-secret and high-confidence token/private-key scans passed across candidate files and reachable Git history; compiled desktop assets also contain no private configuration values. The local `.env` is ignored with mode 0600. The subsequent handoff commit changes documentation only and skips duplicate hosted CI; this run is the evidence for its unchanged implementation.
+
+## Phase 2 acceptance ledger
+
+| Area                                       | Verified evidence                                                                                                           | Remaining physical acceptance                                                                                        |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Owner / passkeys                           | Real Safari registration, owner confirmation, native redemption and signed snapshot; adversarial WebAuthn integration tests | Additional real assertion/sign-in and native GUI check                                                               |
+| macOS secure storage                       | Real isolated Keychain roundtrip and initial native identity/session persistence                                            | Owner deferred the later Keychain access prompt; do not bypass it                                                    |
+| Restart / resume                           | Automated rotating refresh, restart and replay tests                                                                        | Restart the native app, approve Keychain when ready, and verify resumed real identity                                |
+| Recovery                                   | Real-cryptography integration covers trusted-device proof, one-use code, replacement passkey and authority revocation       | Owner must step up, generate/save real codes privately and complete a recovery ceremony; no real codes generated yet |
+| Device identity / signing / replay         | Cross-language signature fixture, immutable keys, durable nonce uniqueness and adversarial requests pass                    | Windows native device checks remain pending                                                                          |
+| Sessions / step-up / revocation / lockdown | Scoped grants, rotation, expiry, revision conflicts, invalidation and revoked WebSocket reconnect tests pass                | Final authenticated native security-state walkthrough deferred                                                       |
+| Approvals / realtime                       | Durable decisions with execution disabled; multi-client replay/resync, ordering and LISTEN recovery pass                    | Real native client walkthrough deferred                                                                              |
+| UI                                         | Targeted render/sync tests and built browser first-run layout checked; unknown device/security state requires sign-in       | Authenticated native screens require the deferred secure-store access                                                |
+| Windows                                    | Hosted native checks pass on the implementation checkpoint                                                                  | Windows Hello registration/assertion, Credential Manager persistence and revoked-session rejection on the Gaming PC  |
+
+When the owner resumes physical validation, first prepare Core, PostgreSQL and the native app automatically, then request only the exact OS/passkey interaction. Do not print recovery material, reset real identity, use test credentials in the owner database or represent deferred actions as complete. Full Phase 2 closure remains pending these checks.
 
 ## Preserved Phase 1 closure
 
@@ -31,7 +47,7 @@ Phase 1 — Foundation / Prompt #1 **COMPLETE**. Local verification and hosted L
 
 ## In Progress
 
-Phase 2 implementation and adversarial verification. Phase 1 remains complete.
+Phase 2 physical acceptance and final closure. Implementation and automated adversarial verification are complete; owner-deferred and Windows physical checks remain pending. Phase 1 remains complete.
 
 ## Not Started
 
@@ -57,9 +73,9 @@ The API client rejects redirects and non-loopback endpoints. Setup fields cannot
 
 ## Next Recommended Work
 
-Complete the owner-authorized Prompt #2 implementation and validation; do not start Prompt #3 or deployment work. Track the Actions Node 20 deprecation notices as future maintenance.
+Resume only the pending owner-authorized Prompt #2 physical validation when the owner is ready; do not start Prompt #3 or deployment work. Track the Actions Node 20 deprecation notices as future maintenance.
 
-## Verification Commands and Results
+## Preserved Phase 1 verification commands and results
 
 | Verification               | Evidence                                                                                                                                                                                                                          |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -77,7 +93,7 @@ Use `pnpm rust:check` and `cargo build --workspace --locked` after `pnpm build`.
 
 At Phase 1 closure, the development database contained one real Core verification audit event and no users or devices. Phase 2 owner-authorized onboarding has now created one real owner, one trusted Mac, one active passkey and one session. No recovery codes have yet been generated; that requires the deferred owner verification. No test fixtures entered the development database. A new clone/database starts empty. Test fixtures exist only inside disposable test databases.
 
-## Hosted closure evidence
+## Preserved Phase 1 hosted closure evidence
 
 | Hosted job                | Platform                | Validate #5 result                                                                            |
 | ------------------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
