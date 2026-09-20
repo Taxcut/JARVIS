@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+target/
+coverage/
+.DS_Store
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
+*.tsbuildinfo
+apps/desktop/src-tauri/gen/

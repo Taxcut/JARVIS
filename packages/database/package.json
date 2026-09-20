@@ -1,0 +1,19 @@
+{
+  "name": "@jarvis/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.16.0",
+    "@jarvis/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.0"
+  }
+}

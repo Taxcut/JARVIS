@@ -1,0 +1,38 @@
+{
+  "name": "jarvis",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @jarvis/core --filter @jarvis/desktop dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:integration": "node infra/scripts/integration.mjs",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose --env-file .env -f infra/docker/compose.yml up -d --wait",
+    "db:down": "docker compose --env-file .env -f infra/docker/compose.yml down",
+    "db:migrate": "pnpm --filter @jarvis/core db:migrate",
+    "desktop": "pnpm --filter @jarvis/desktop tauri dev",
+    "rust:check": "cargo fmt --all --check && cargo check --workspace && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "configure": "tsx infra/scripts/configure.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "typescript-eslint": "^8.0.0",
+    "typescript": "^5.9.3",
+    "prettier": "^3.6.2",
+    "vitest": "^5.0.1",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "esbuild": "^0.28.2"
+  },
+  "type": "module"
+}
