@@ -45,6 +45,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @jarvis/desktop build
+      - run: pnpm runtime:prepare
       - run: cargo fmt --all --check
       - run: cargo check --workspace --locked
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings

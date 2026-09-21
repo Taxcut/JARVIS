@@ -70,6 +70,50 @@ async fn native_poll(state: tauri::State<'_, IdentityState>, id: String) -> Resu
         .poll(&id)
         .await
 }
+#[tauri::command]
+async fn runtime_status() -> Result<Option<jarvis_runtime::Status>, String> {
+    match jarvis_runtime::ipc::request(jarvis_runtime::ipc::Command::Status {}).await {
+        Ok(reply) => Ok(reply.status),
+        Err(_) => Ok(None),
+    }
+}
+#[tauri::command]
+async fn runtime_start() -> Result<(), String> {
+    if jarvis_runtime::ipc::request(jarvis_runtime::ipc::Command::Status {})
+        .await
+        .is_ok()
+    {
+        return Ok(());
+    }
+    jarvis_runtime::platform::start()
+}
+#[tauri::command]
+async fn runtime_connect(
+    state: tauri::State<'_, IdentityState>,
+    base: String,
+) -> Result<jarvis_runtime::ipc::Reply, String> {
+    // Verify local receiver before issuing credentials. Never return provisioning material to React.
+    jarvis_runtime::ipc::request(jarvis_runtime::ipc::Command::Status {}).await?;
+    let session = ready(&state)
+        .await?
+        .as_mut()
+        .ok_or("Native identity unavailable")?
+        .issue_runtime_session(&base)
+        .await?;
+    jarvis_runtime::ipc::request(jarvis_runtime::ipc::Command::Provision { base, session }).await
+}
+#[tauri::command]
+async fn runtime_reconnect() -> Result<jarvis_runtime::ipc::Reply, String> {
+    jarvis_runtime::ipc::request(jarvis_runtime::ipc::Command::Reconnect {}).await
+}
+#[tauri::command]
+async fn runtime_stop() -> Result<jarvis_runtime::ipc::Reply, String> {
+    jarvis_runtime::ipc::request(jarvis_runtime::ipc::Command::Stop {}).await
+}
+#[tauri::command]
+async fn runtime_startup(enable: Option<bool>) -> Result<String, String> {
+    jarvis_runtime::platform::startup(enable)
+}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     debug_assert!(!jarvis_runtime::status().execution_available);
@@ -80,7 +124,13 @@ pub fn run() {
             native_resume,
             native_api,
             native_begin,
-            native_poll
+            native_poll,
+            runtime_status,
+            runtime_start,
+            runtime_connect,
+            runtime_reconnect,
+            runtime_stop,
+            runtime_startup
         ])
         .run(tauri::generate_context!())
         .expect("JARVIS desktop failed to start");

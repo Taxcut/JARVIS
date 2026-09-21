@@ -18,7 +18,7 @@ export const systemSchema = z.strictObject({
   name: z.literal('JARVIS Core'),
   version: z.string(),
   protocolVersion: z.literal(1),
-  phase: z.literal(2),
+  phase: z.literal(3),
 });
 export const setupStatusSchema = z.strictObject({
   configured: z.literal(false),
@@ -40,6 +40,10 @@ export const errorSchema = z.object({
   }),
 });
 export const eventTypeSchema = z.enum([
+  'runtime.registered',
+  'runtime.updated',
+  'runtime.stopped',
+  'runtime.expired',
   'owner.created',
   'owner.update',
   'passkey.created',
@@ -129,3 +133,5 @@ export const deviceMessageSchema = z.discriminatedUnion('type', [
 export const setupVerifySchema = z.strictObject({});
 
 export * from './identity.js';
+
+export * from './runtime.js';

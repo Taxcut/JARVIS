@@ -1,5 +1,9 @@
 # Implementation status
 
+## Phase 3 — IN PROGRESS
+
+Owner Prompt #3 authorizes the always-on user-session runtime on `feat/phase3-runtime`, based on `58f3ebabde0c25cca7e04b66ab32d40df6303b35`. Core presence, restricted runtime sessions, native process/IPC/startup scaffolding and dashboard controls are implemented and under validation. All 19 PostgreSQL integration tests and TypeScript checking pass. Native builds, hosted CI, expanded failure tests and physical Mac acceptance are still pending. This is not a closure claim; no Phase 3 merge is authorized. Prompt #4 has not started. Historical Phase 2 statements below describe that phase’s closure, before the new authorization.
+
 ## Phase 2 — COMPLETE for macOS; Windows physical acceptance intentionally deferred
 
 Prompt #2 implementation and the requested real macOS checks passed on 2026-09-20/21. The owner explicitly resumed the previously deferred Mac checks and intentionally deferred Windows Hello / Credential Manager / Gaming PC physical acceptance; those are not failures or blockers for this macOS closure. No execution is enabled and Prompt #3 has not started. The shutdown correction passed fresh Linux/macOS/Windows hosted validation. The owner approved [PR #1](https://github.com/Taxcut/JARVIS/pull/1), which merged into `main` on 2026-09-21 using a merge commit (`0040f73ed072656eb773b18ff25e1ace26d087aa`). The merged tree exactly matches the approved Phase 2 head `19a9f2a6a4018e1ad1ad963dc40f2782146e3bad`; no implementation changes were introduced by the merge.
@@ -35,7 +39,7 @@ The code fix and validation evidence are now on `main` through merged PR #1. Loc
 
 The sanitized owner document remains incorporated in OWNER_CONFIGURATION, VOICE, ARCHITECTURE, SECURITY and JARVISSETUP. Provider credentials stay private, ignored and unused by Phase 2; preferences and infrastructure requirements remain planned only. Fresh databases contain no operational fixtures. The owner database contains only real authorized setup/security actions.
 
-Windows hosted compilation/tests passed previously; Windows Hello registration/assertion, Credential Manager persistence and Gaming PC acceptance are intentionally deferred, not failed. Future production roles, remote hosting, signed installers, voice, phone, execution and all-trusted-device-loss offline recovery remain documented later work. The subsequent owner instruction authorized the PR #1 merge only; no Prompt #3 work is authorized.
+Windows hosted compilation/tests passed previously; Windows Hello registration/assertion, Credential Manager persistence and Gaming PC acceptance are intentionally deferred, not failed. Future production roles, remote hosting, signed installers, voice, phone, execution and all-trusted-device-loss offline recovery remain documented later work. The subsequent owner instruction authorized the PR #1 merge only; no Prompt #3 work was authorized at that checkpoint. The later Prompt #3 instruction supersedes that scope restriction.
 
 ## Preserved Phase 1 closure
 

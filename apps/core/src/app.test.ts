@@ -79,7 +79,7 @@ it('returns authentic initial setup, version and successful readiness', async ()
   ).toBe(200);
   expect(
     (await app.inject({ url: '/api/v1/system/version', headers })).json(),
-  ).toMatchObject({ protocolVersion: 1, phase: 2 });
+  ).toMatchObject({ protocolVersion: 1, phase: 3 });
 });
 it('generates request IDs, propagates valid correlation, and gives structured errors', async () => {
   const { app } = await make();

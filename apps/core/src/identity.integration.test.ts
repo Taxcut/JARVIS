@@ -226,6 +226,190 @@ it('registers a real verified credential, key proof, sole owner and session with
   expect(JSON.stringify(r.json())).not.toContain(session.refresh);
   expect((await db.setup()).configured).toBe(false);
 });
+it('isolates runtime authority, stores bounded presence, rejects future capabilities and expires leases', async () => {
+  const provision = () =>
+    app.inject(request('POST', '/api/v1/runtime/session', '{}'));
+  const issued = await provision();
+  expect(issued.statusCode).toBe(200);
+  let runtime = issued.json() as typeof session;
+  const call = (
+    path: string,
+    body: unknown = {},
+    method: 'GET' | 'POST' = 'POST',
+  ) =>
+    app.inject(
+      request(
+        method,
+        path,
+        method === 'GET' ? '' : JSON.stringify(body),
+        first,
+        runtime,
+      ),
+    );
+  expect((await call('/api/v1/runtime/session')).statusCode).toBe(403);
+  expect(
+    (
+      await call('/api/v1/identity/mutate', {
+        version: 1,
+        action: 'enrollment.create',
+      })
+    ).statusCode,
+  ).toBe(403);
+  expect(
+    (
+      await call('/api/v1/auth/prepare', {
+        version: 1,
+        mode: 'stepup',
+        device: first.candidate,
+        purpose: 'recovery.regenerate',
+        target: ctx.ownerId,
+      })
+    ).statusCode,
+  ).toBe(403);
+  expect(
+    (await call('/api/v1/runtime/compatibility', {}, 'GET')).json()
+      .executionAvailable,
+  ).toBe(false);
+  const report = {
+    version: 1,
+    runtimeProtocolVersion: 1,
+    instanceId: randomUUID(),
+    runtimeVersion: '0.3.0',
+    build: 'development',
+    platform: 'macos',
+    architecture: 'arm64',
+    startedAt: new Date().toISOString(),
+    state: 'ONLINE',
+    startup: 'DISABLED',
+    wakeGeneration: 0,
+    executionAvailable: false,
+    capabilities: Object.fromEntries([
+      ...[
+        'runtime.lifecycle',
+        'runtime.health',
+        'runtime.secure_identity',
+        'runtime.realtime',
+        'runtime.autostart',
+        'runtime.sleep_wake',
+      ].map((k) => [k, 'AVAILABLE']),
+      ...[
+        'voice.wake_word',
+        'audio.capture',
+        'screen.capture',
+        'computer.keyboard',
+        'computer.mouse',
+        'computer.apps',
+        'computer.shell',
+        'remote.desktop',
+      ].map((k) => [k, 'UNAVAILABLE']),
+    ]),
+  };
+  expect(
+    (
+      await call('/api/v1/runtime/register', {
+        ...report,
+        runtimeProtocolVersion: 2,
+      })
+    ).statusCode,
+  ).toBe(426);
+  expect(
+    (
+      await call('/api/v1/runtime/register', {
+        ...report,
+        executionAvailable: true,
+      })
+    ).statusCode,
+  ).toBe(400);
+  expect(
+    (
+      await call('/api/v1/runtime/register', {
+        ...report,
+        capabilities: { ...report.capabilities, 'computer.shell': 'AVAILABLE' },
+      })
+    ).statusCode,
+  ).toBe(400);
+  expect(
+    (await call('/api/v1/runtime/register', { ...report, platform: 'windows' }))
+      .statusCode,
+  ).toBe(403);
+  expect((await call('/api/v1/runtime/heartbeat', report)).statusCode).toBe(
+    409,
+  );
+  expect((await call('/api/v1/runtime/register', report)).statusCode).toBe(200);
+  const auditCount = async () =>
+    Number(
+      (
+        await db.pool.query(
+          "SELECT count(*) FROM audit_events WHERE type LIKE 'runtime.%'",
+        )
+      ).rows[0]!.count,
+    );
+  const audited = await auditCount();
+  const replay = request(
+    'POST',
+    '/api/v1/runtime/heartbeat',
+    JSON.stringify(report),
+    first,
+    runtime,
+  );
+  expect((await app.inject(replay)).statusCode).toBe(200);
+  expect((await app.inject(replay)).statusCode).toBe(401);
+  expect(await auditCount()).toBe(audited);
+  expect(
+    (await db.pool.query('SELECT count(*) FROM runtime_presence')).rows[0]!
+      .count,
+  ).toBe('1');
+  await db.pool.query(
+    "UPDATE runtime_presence SET expires_at=now()-interval '1 second'",
+  );
+  expect(
+    (await call('/api/v1/identity/snapshot', {}, 'GET')).json()
+      .runtimePresence[0].state,
+  ).toBe('OFFLINE');
+  await store.cleanup();
+  expect(await auditCount()).toBe(audited + 1);
+  const refreshed = await app.inject(
+    request('POST', '/api/v1/session/refresh', '{}', first, {
+      ...runtime,
+      access: runtime.refresh,
+    }),
+  );
+  expect(refreshed.statusCode).toBe(200);
+  runtime = refreshed.json();
+  const connected = await stream('0', first, runtime);
+  expect(
+    (await connected.next()).snapshot.devices.some(
+      (d) => d.id === first.candidate.id,
+    ),
+  ).toBe(true);
+  const closed = new Promise<void>((resolve) =>
+    connected.socket.once('close', () => resolve()),
+  );
+  await db.pool.query('DELETE FROM security_rate_limits');
+  const next = await provision();
+  expect(next.statusCode).toBe(200);
+  await closed;
+  expect((await call('/api/v1/identity/snapshot', {}, 'GET')).statusCode).toBe(
+    401,
+  );
+  runtime = next.json();
+  expect((await call('/api/v1/runtime/register', report)).statusCode).toBe(409);
+  const restarted = { ...report, instanceId: randomUUID() };
+  expect((await call('/api/v1/runtime/register', restarted)).statusCode).toBe(
+    200,
+  );
+  expect(
+    (await call('/api/v1/runtime/stop', { ...restarted, state: 'STOPPING' }))
+      .statusCode,
+  ).toBe(200);
+  expect((await app.inject(request())).json().runtimePresence[0].state).toBe(
+    'OFFLINE',
+  );
+  await db.pool.query('UPDATE sessions SET revoked_at=now() WHERE id=$1', [
+    runtime.sessionId,
+  ]);
+  expect((await app.inject(request())).statusCode).toBe(200);
+});
 it('requires proof, trusted device identity and exact public key before login', async () => {
   const fresh = device();
   await expect(ceremony('login', fresh)).rejects.toThrow();
@@ -573,6 +757,10 @@ it('enforces revisions, lockdown and durable approvals without execution authori
   await expect(
     mutate(store, ctx, { version: 1, action: 'enrollment.create' }),
   ).rejects.toThrow('LOCKDOWN');
+  expect(
+    (await app.inject(request('POST', '/api/v1/runtime/session', '{}')))
+      .statusCode,
+  ).toBe(403);
   expect((await app.inject(request())).statusCode).toBe(200);
   revision = (await store.tx((q) => store.snapshot(q, ctx))).owner.revision;
   await mutate(store, ctx, {
