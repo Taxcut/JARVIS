@@ -111,6 +111,10 @@ export async function registerRealtime(
     connecting = true;
     try {
       const client = await store.pool.connect();
+      if (stopping) {
+        client.release();
+        return;
+      }
       listener = client;
       const failed = () => {
         if (listener !== client) return;
@@ -150,7 +154,9 @@ export async function registerRealtime(
     }
   }, 15000);
   heartbeat.unref();
-  app.addHook('onClose', async () => {
+  // Release the checked-out LISTEN connection before onClose hooks can end
+  // the owning database pool. onClose hooks run in reverse registration order.
+  app.addHook('preClose', async () => {
     stopping = true;
     clearInterval(heartbeat);
     if (reconnect) clearTimeout(reconnect);

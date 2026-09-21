@@ -141,6 +141,50 @@ afterAll(async () => {
   await admin.query('DROP DATABASE identity_test');
   await admin.end();
 });
+it('closes its owned database pool with a live WebSocket during Core shutdown', async () => {
+  const owned = createDatabase(testUrl.href);
+  // The ready hook will reuse this idle connection for LISTEN. Keep only its
+  // server PID so a failing regression can clean up without leaking handles.
+  const listenerPid = (
+    await owned.pool.query<{ pid: number }>('SELECT pg_backend_pid() AS pid')
+  ).rows[0]!.pid;
+  const server = await createApp(config, owned);
+  server.addHook('onClose', () => owned.close()); // Same ownership order as main.
+  const base = await server.listen({ host: '127.0.0.1', port: 0 });
+  const socket = new WebSocket(
+    base.replace('http:', 'ws:') + '/api/v1/realtime',
+  );
+  let closing: Promise<void> | undefined;
+  let closed = false;
+  let deadline: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      socket.once('open', resolve);
+      socket.once('error', reject);
+    });
+    closing = server.close().then(() => {
+      closed = true;
+    });
+    await Promise.race([
+      closing,
+      new Promise<never>((_, reject) => {
+        deadline = setTimeout(
+          () =>
+            reject(new Error('Core shutdown retained its LISTEN connection')),
+          2000,
+        );
+      }),
+    ]);
+    expect(owned.pool.totalCount).toBe(0);
+    expect(socket.readyState).not.toBe(WebSocket.OPEN);
+  } finally {
+    if (deadline) clearTimeout(deadline);
+    socket.terminate();
+    if (!closed)
+      await admin.query('SELECT pg_terminate_backend($1)', [listenerPid]);
+    await (closing ?? server.close());
+  }
+});
 it('registers a real verified credential, key proof, sole owner and session with no bootstrap bypass', async () => {
   expect(await store.hasOwner()).toBe(false);
   const c = await ceremony('bootstrap');
