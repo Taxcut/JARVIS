@@ -1,8 +1,8 @@
 # Implementation status
 
-## Phase 2 — macOS physical acceptance passed; final hosted validation pending
+## Phase 2 — COMPLETE for macOS; Windows physical acceptance intentionally deferred
 
-Prompt #2 implementation and the requested real macOS checks passed on 2026-09-20/21. The owner explicitly resumed the previously deferred Mac checks and intentionally deferred Windows Hello / Credential Manager / Gaming PC physical acceptance; those are not failures or blockers for this macOS closure. No execution is enabled and Prompt #3 has not started. The shutdown correction below requires fresh hosted CI before marking the PR ready.
+Prompt #2 implementation and the requested real macOS checks passed on 2026-09-20/21. The owner explicitly resumed the previously deferred Mac checks and intentionally deferred Windows Hello / Credential Manager / Gaming PC physical acceptance; those are not failures or blockers for this macOS closure. No execution is enabled and Prompt #3 has not started. The shutdown correction passed fresh Linux/macOS/Windows hosted validation. PR #1 is ready for owner review after the documentation closure; it is not merged.
 
 ## Real macOS acceptance evidence
 
@@ -23,7 +23,13 @@ Physical reconnect testing exposed an ordering deadlock: the production database
 
 The regression test reproduced the hang before the fix, then passed afterward with a live WebSocket and the same database-ownership hook order as production. The corrected compiled Core subsequently exited with code 0 during the real native-client test and reconnected successfully after relaunch. `pnpm check` passed formatting, lint, strict types, 31 unit/contract/API/render tests and builds. `pnpm test:integration` passed all 18 real PostgreSQL tests, including the new shutdown regression. The current native macOS bundle was rebuilt and used for physical checks; Rust/native implementation remains unchanged.
 
-Fresh hosted validation for this correction is pending. Earlier [hosted validation](https://github.com/Taxcut/JARVIS/actions/runs/35545676708) passed Linux/macOS/Windows on `c61e99e1855f31c0161c06832a04bac73b083f37`; original [Phase 2 validation](https://github.com/Taxcut/JARVIS/actions/runs/35530976129) passed on `16dfe950315d1d63aa7e30cb7dae78dbaa886c8c`. Preserve these historical results separately from the new checkpoint.
+[Final hosted validation](https://github.com/Taxcut/JARVIS/actions/runs/35567260762) passed `typescript` (Linux), `native (macos-latest)` and `native (windows-latest)` on `1d2857eef87a12e56e97b9e4168807115de50231`. The following closure commit changes documentation only and skips duplicate CI; its implementation is identical to this tested checkpoint. Earlier [hosted validation](https://github.com/Taxcut/JARVIS/actions/runs/35545676708) passed Linux/macOS/Windows on `c61e99e1855f31c0161c06832a04bac73b083f37`; original [Phase 2 validation](https://github.com/Taxcut/JARVIS/actions/runs/35530976129) passed on `16dfe950315d1d63aa7e30cb7dae78dbaa886c8c`. Preserve these historical results separately from the new checkpoint.
+
+## Final secrets and repository review
+
+Supplied-secret/high-confidence token/private-key scans passed across candidate files and reachable Git history. A hash-based scan against the current recovery set found no raw codes in those files/history or compiled frontend assets, without printing or retaining the codes. The built frontend contains no local/provider credentials; no personal home paths entered tracked content. `.env` remains ignored and mode 0600. Native device keys and refresh material still use OS secure storage only. The owner-facing replacement codes were never captured by the agent.
+
+The code fix and validation evidence are committed/pushed on `feat/phase2-identity-sync`; the final closure is documentation only. Keep PR #1 ready for review and unmerged. No Prompt #3 work was started.
 
 ## Owner configuration and remaining boundaries
 
@@ -48,7 +54,7 @@ Phase 1 — Foundation / Prompt #1 **COMPLETE**. Local verification and hosted L
 
 ## In Progress
 
-Final hosted validation of the Phase 2 shutdown correction. Mac physical acceptance passed; Windows physical testing is intentionally deferred. Phase 1 remains complete.
+No Phase 2 macOS acceptance work remains. PR #1 awaits owner review/merge decision. Windows physical testing is intentionally deferred to the Gaming PC. Phase 1 remains complete.
 
 ## Not Started
 
@@ -74,7 +80,7 @@ The API client rejects redirects and non-loopback endpoints. Setup fields cannot
 
 ## Next Recommended Work
 
-Finish the current hosted validation and ready PR #1 for owner review; do not start Prompt #3 or deployment work. Track the Actions Node 20 deprecation notices as future maintenance.
+Owner review of PR #1, then later owner-authorized Gaming PC physical validation. Do not start Prompt #3 or deployment work. Track the Actions Node 20 deprecation notices as future maintenance.
 
 ## Preserved Phase 1 verification commands and results
 

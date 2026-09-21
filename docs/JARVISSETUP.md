@@ -23,7 +23,7 @@ pnpm db:migrate
 
 The generator creates an ignored `.env` with random local API/database credentials and restrictive permissions. It refuses to replace an existing file. Do not copy `.env.example` first when using the generator. `.env.example` documents names only and contains no password. For manual setup, copy the example and fill valid values locally; the API token must be 32 random bytes encoded as 64 lowercase hex characters. No phone number is required.
 
-The compose service is named `jarvis`, PostgreSQL listens at loopback port 54329 and its volume persists data. Do not use that development superuser configuration in production. Set NODE_ENV explicitly to development, test or production as appropriate; production mode does not magically enable public deployment security.
+The Compose project is named `jarvis`, its database service is `postgres`, PostgreSQL listens at loopback port 54329 and its volume persists data. Do not use that development superuser configuration in production. Set NODE_ENV explicitly to development, test or production as appropriate; production mode does not magically enable public deployment security.
 
 ## Run
 
