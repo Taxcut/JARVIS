@@ -1,3 +1,7 @@
+import { useIdentity } from './use-identity.js';
+import { IdentityViews, IdentityEntry } from './IdentityViews.js';
+import { api } from './identity-client.js';
+import { setupStatusSchema } from '@jarvis/protocol';
 import { useState } from 'react';
 import { createClient } from '@jarvis/api-client';
 import type { SetupStatus } from '@jarvis/protocol';
@@ -11,11 +15,21 @@ const sections = [
   'Automations',
   'Calls',
   'Security',
+  'Owner',
+  'Approvals',
   'Diagnostics',
   'Settings',
 ] as const;
 type Section = (typeof sections)[number];
 const empty: Record<Section, [string, string]> = {
+  Owner: [
+    'Your identity, Sir.',
+    'Your single-owner profile and security state.',
+  ],
+  Approvals: [
+    'No approval requests.',
+    'Durable owner decisions, with no execution authority.',
+  ],
   Core: [
     'Your foundation, ready to begin.',
     'Connect to your local Core to verify the database and begin setup.',
@@ -30,7 +44,7 @@ const empty: Record<Section, [string, string]> = {
   ],
   Devices: [
     'No enrolled devices.',
-    'Trusted device enrollment will be available in a later phase. No device authority has been granted.',
+    'Enroll and manage devices with cryptographic identity. Computer execution remains unavailable.',
   ],
   Remote: [
     'No remote sessions.',
@@ -50,7 +64,7 @@ const empty: Record<Section, [string, string]> = {
   ],
   Security: [
     'Setup required.',
-    'The capability policy foundation is in place. Owner identity, enrollment, and execution approval are not implemented.',
+    'Manage your passkeys, sessions, recovery codes and security state.',
   ],
   Diagnostics: [
     'Observe the real system.',
@@ -66,6 +80,7 @@ export function App() {
   const [setup, setSetup] = useState(false);
   const [token, setToken] = useState('');
   const [base, setBase] = useState('http://127.0.0.1:4310');
+  const identity = useIdentity(base);
   const [state, setState] = useState<SetupStatus | null>(null);
   const [connection, setConnection] = useState('Not connected');
   const [busy, setBusy] = useState(false);
@@ -74,6 +89,19 @@ export function App() {
     setBusy(true);
     setError('');
     try {
+      if (identity.authenticated) {
+        setState(
+          setupStatusSchema.parse(
+            await api(
+              base,
+              verify ? 'POST' : 'GET',
+              verify ? '/api/v1/setup/core/verify' : '/api/v1/setup/status',
+            ),
+          ),
+        );
+        setConnection('Connected · database ready');
+        return;
+      }
       const client = createClient(token, base);
       await client.health();
       await client.readiness();
@@ -133,7 +161,7 @@ export function App() {
         </nav>
         <div className="sidebar-foot">
           <span className="small-dot" /> FOUNDATION
-          <small>Phase 01 · v0.1.0</small>
+          <small>Phase 02 · v0.2.0</small>
         </div>
       </aside>
       <main>
@@ -143,14 +171,14 @@ export function App() {
           </div>
           <div className="connection">
             <span className="small-dot" />
-            {connection}
+            {identity.authenticated ? identity.sync : connection}
           </div>
         </header>
         <div className="content">
           <div className="eyebrow">YOUR PERSONAL INTELLIGENCE SYSTEM</div>
           <h1>
             {page === 'Core' && !setup
-              ? `${greeting}, Sir.`
+              ? `${greeting}, ${identity.snapshot?.owner.preferredAddress ?? 'Sir'}.`
               : setup
                 ? 'Establish your foundation.'
                 : page}
@@ -159,103 +187,146 @@ export function App() {
             {setup
               ? 'Connect the real system. Every step reflects actual implementation.'
               : page === 'Core'
-                ? 'A clean beginning. Your command center is waiting to be configured.'
+                ? 'Identity and trusted connections. Voice and computer control are future phases.'
                 : empty[page][1]}
           </p>
           {setup ? (
-            <section className="setup panel">
-              <div>
-                <div className="eyebrow">01 / JARVIS CORE</div>
-                <h2>Connect to your local Core</h2>
-                <p>
-                  Start PostgreSQL, run migrations, and start Core using the
-                  repository setup guide. Enter the access token from your
-                  private .env file.
-                </p>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void connect(true);
-                  }}
-                >
-                  <label htmlFor="core-url">Core address</label>
-                  <input
-                    disabled={busy}
-                    id="core-url"
-                    type="url"
-                    value={base}
-                    onChange={(e) => {
-                      setBase(e.target.value);
-                      setState(null);
-                      setConnection('Not connected');
-                    }}
-                    required
-                  />
-                  <label htmlFor="token">Local access token</label>
-                  <input
-                    disabled={busy}
-                    id="token"
-                    type="password"
-                    autoComplete="off"
-                    spellCheck={false}
-                    value={token}
-                    onChange={(e) => {
-                      setToken(e.target.value);
-                      setState(null);
-                      setConnection('Not connected');
-                    }}
-                    required
-                    minLength={64}
-                    maxLength={64}
-                  />
-                  <p className="hint">
-                    Held only in memory for this session. This is bootstrap
-                    access; owner identity is not yet implemented.
+            <>
+              <section className="setup panel">
+                <div>
+                  <div className="eyebrow">01 / JARVIS CORE</div>
+                  <h2>Connect to your local Core</h2>
+                  <p>
+                    Start PostgreSQL, run migrations, and start Core using the
+                    repository setup guide. Enter the access token from your
+                    private .env file.
                   </p>
-                  <button
-                    className="primary"
-                    disabled={busy || token.length !== 64}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void connect(true);
+                    }}
                   >
-                    {busy ? 'Verifying…' : 'Verify Core & save progress'}
-                    <span aria-hidden="true">↗</span>
-                  </button>
-                </form>
-                <div role="status" aria-live="polite">
-                  {state?.core === 'verified' && (
-                    <p className="success">
-                      Core verified. Progress is saved in PostgreSQL. Owner and
-                      security setup remain incomplete.
+                    <label htmlFor="core-url">Core address</label>
+                    <input
+                      disabled={busy}
+                      id="core-url"
+                      type="url"
+                      value={base}
+                      onChange={(e) => {
+                        setBase(e.target.value);
+                        setState(null);
+                        setConnection('Not connected');
+                      }}
+                      required
+                    />
+                    <label htmlFor="token">Local access token</label>
+                    <input
+                      disabled={busy}
+                      id="token"
+                      type="password"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={token}
+                      onChange={(e) => {
+                        setToken(e.target.value);
+                        setState(null);
+                        setConnection('Not connected');
+                      }}
+                      required={!identity.authenticated}
+                      minLength={64}
+                      maxLength={64}
+                    />
+                    <p className="hint">
+                      Held only in memory for this session. This is bootstrap
+                      access only, permanently disabled after owner creation.
                     </p>
-                  )}
-                  {error && <p className="error">{error}</p>}
+                    <button
+                      className="primary"
+                      disabled={
+                        busy || (!identity.authenticated && token.length !== 64)
+                      }
+                    >
+                      {busy ? 'Verifying…' : 'Verify Core & save progress'}
+                      <span aria-hidden="true">↗</span>
+                    </button>
+                  </form>
+                  <div role="status" aria-live="polite">
+                    {state?.core === 'verified' && (
+                      <p className="success">
+                        Core verified. Progress is saved in PostgreSQL. Owner
+                        and security setup remain incomplete.
+                      </p>
+                    )}
+                    {error && <p className="error">{error}</p>}
+                  </div>
                 </div>
-              </div>
-              <ol className="steps">
-                {[
-                  'JARVIS Core',
-                  'Owner Identity',
-                  'Device Enrollment',
-                  'Voice',
-                  'Phone Link',
-                  'Security',
-                  'System Test',
-                ].map((name, i) => (
-                  <li key={name}>
-                    <span>{String(i + 1).padStart(2, '0')}</span>
-                    <div>
-                      {name}
-                      <small>
-                        {i === 0
-                          ? state?.core === 'verified'
-                            ? 'Verified'
-                            : 'Available now'
-                          : 'Planned · not implemented'}
-                      </small>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
+                <ol className="steps">
+                  {[
+                    'JARVIS Core',
+                    'Owner Identity',
+                    'Owner Passkey',
+                    'Current Device Identity',
+                    'Device Enrollment',
+                    'Voice',
+                    'Phone Link',
+                    'Security',
+                    'System Test',
+                  ].map((name, i) => (
+                    <li key={name}>
+                      <span>{String(i + 1).padStart(2, '0')}</span>
+                      <div>
+                        {name}
+                        <small>
+                          {i === 0
+                            ? state?.core === 'verified'
+                              ? 'Verified'
+                              : 'Available now'
+                            : name === 'Owner Identity'
+                              ? identity.snapshot
+                                ? 'Secured'
+                                : 'Available now'
+                              : name === 'Owner Passkey'
+                                ? identity.snapshot?.passkeys.some(
+                                    (p) => !p.revokedAt,
+                                  )
+                                  ? 'Registered'
+                                  : 'Required'
+                                : name === 'Current Device Identity'
+                                  ? identity.native
+                                    ? 'Native secure storage ready'
+                                    : 'Native desktop required'
+                                  : name === 'Device Enrollment'
+                                    ? identity.snapshot?.devices.some(
+                                        (d) =>
+                                          d.id === identity.native?.device.id &&
+                                          d.trustState === 'trusted',
+                                      )
+                                      ? 'Trusted'
+                                      : 'Required'
+                                    : name === 'Security'
+                                      ? identity.snapshot
+                                          ?.recoveryCodesRemaining
+                                        ? 'Recovery codes available'
+                                        : 'Recovery setup required'
+                                      : 'Future phase · not configured'}
+                        </small>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+              {!identity.authenticated ? (
+                <IdentityEntry identity={identity} token={token} />
+              ) : (
+                <p className="hint">
+                  Owner secured. Manage recovery in Security. Voice, phone,
+                  remote and production setup remain unconfigured.
+                </p>
+              )}
+            </>
+          ) : ['Owner', 'Security', 'Devices', 'Approvals'].includes(page) ? (
+            <IdentityViews key={page} page={page} identity={identity} />
           ) : page === 'Core' ? (
             <>
               <section className="hero panel">
@@ -267,14 +338,16 @@ export function App() {
                     Before the first command.
                   </h2>
                   <p>
-                    Connect Core to begin. Devices, voice, and capabilities will
-                    remain inactive until their future setup is complete.
+                    Connect Core and secure your owner identity. Voice and
+                    computer execution remain future work.
                   </p>
                   <button className="primary" onClick={() => setSetup(true)}>
                     Begin Setup <span aria-hidden="true">↗</span>
                   </button>
                   <div className="hero-note">
-                    No devices enrolled. No actions authorized.
+                    {identity.snapshot
+                      ? `${identity.snapshot.devices.filter((d) => d.trustState === 'trusted').length} trusted devices. No execution available.`
+                      : 'Sign in to view your trusted devices. Execution unavailable.'}
                   </div>
                 </div>
                 <div className="presence" aria-hidden="true">
@@ -294,14 +367,22 @@ export function App() {
                 {[
                   [
                     'Core',
-                    state?.core === 'verified'
-                      ? 'Verified'
-                      : state
-                        ? 'Not configured'
-                        : 'Not connected',
+                    identity.sync === 'LIVE'
+                      ? 'Connected'
+                      : state?.core === 'verified'
+                        ? 'Verified'
+                        : state
+                          ? 'Not configured'
+                          : 'Not connected',
                     'Connection & database',
                   ],
-                  ['Devices', 'No enrolled devices', 'Trusted device network'],
+                  [
+                    'Devices',
+                    identity.snapshot
+                      ? `${identity.snapshot.devices.filter((d) => d.trustState === 'trusted').length} trusted devices`
+                      : 'Sign in to view devices',
+                    'Trusted device network',
+                  ],
                   [
                     'Assistant',
                     'Voice not configured',
@@ -309,7 +390,12 @@ export function App() {
                   ],
                   ['Calls', 'Phone Link not configured', 'Calls & messages'],
                   ['Missions', 'No missions yet', 'Planning & execution'],
-                  ['Security', 'Setup required', 'Identity & permissions'],
+                  [
+                    'Security',
+                    identity.snapshot?.owner.securityState ??
+                      'Sign in to view security',
+                    'Identity & permissions',
+                  ],
                 ].map(([name, status, description]) => (
                   <button
                     className="card"

@@ -1,8 +1,45 @@
 # Implementation status
 
-## Current Phase
+## Phase 2 — COMPLETE for macOS; Windows physical acceptance intentionally deferred
 
-Phase 1 — Foundation / Prompt #1 **COMPLETE**. Local verification and hosted Linux/macOS/Windows validation satisfy the Phase 1 acceptance criteria. The former hosted-CI blocker is resolved. Prompt #2 has not started. Last verified 2026-09-20 on Apple Silicon macOS, Node 24.21.0, pnpm 12.4.2, Rust 1.98.1 and Docker 29.8.0.
+Prompt #2 implementation and the requested real macOS checks passed on 2026-09-20/21. The owner explicitly resumed the previously deferred Mac checks and intentionally deferred Windows Hello / Credential Manager / Gaming PC physical acceptance; those are not failures or blockers for this macOS closure. No execution is enabled and Prompt #3 has not started. The shutdown correction passed fresh Linux/macOS/Windows hosted validation. PR #1 is ready for owner review after the documentation closure; it is not merged.
+
+## Real macOS acceptance evidence
+
+| Area                       | Physical result and limits                                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keychain                   | Owner approved legitimate native JARVIS access. Existing device identity and resume material loaded successfully. No plaintext fallback; no further approval was needed for relaunching the same build.                                                                                                                                                                                                                          |
+| Native restart/resume      | Quit and relaunched the real native app with a new process. Database comparison confirmed the same device UUID/public key, exactly one trusted Mac, the same resumed session and an advanced refresh revision. Signed native requests and LIVE realtime state succeeded.                                                                                                                                                         |
+| Additional passkey sign-in | Real system-browser assertion succeeded for localhost RP and exact local auth origin with UV required. Existing passkey usage metadata advanced; counter remained non-decreasing. Native device proof, consumed challenge, verified ceremony and one-use native redemption were confirmed; a new session bound to the same Mac was issued. Bootstrap bearer access still returned 401.                                           |
+| Session revocation         | Owner passkey step-up revoked the current real session. Realtime stopped, the UI marked data stale/offline and disabled changes; reconnect/resume of the revoked session was rejected. A fresh real sign-in restored LIVE state.                                                                                                                                                                                                 |
+| Recovery setup             | Real purpose-bound passkey verification generated eight codes. The owner had not saved the initial set and explicitly requested replacement. Fresh verification replaced it; all old recovery rows were removed and eight new unused SHA-256 hashes remained. Owner confirmed the new codes were saved privately and hidden. No raw codes were read, captured, logged or committed. Both generations have CRITICAL audit events. |
+| Recovery limits            | Replacement invalidation was physically verified. Code consumption/new-passkey recovery and trusted-device enforcement remain covered by real-cryptography integration tests; no destructive recovery of the working owner passkey was performed or claimed. Loss of every trusted device still has no online reset. The current owner request requires real recovery setup, not consuming the saved codes.                      |
+| Authenticated GUI          | Owner, Security, Devices and Approvals inspected against actual state: one trusted Mac, NORMAL security state, one active and one revoked session, eight unused recovery codes and no approvals. Codes stayed hidden during inspection. Empty approvals explicitly confer no execution authority. Future voice/phone/computer control remain unavailable.                                                                        |
+| Realtime reconnect         | Controlled Core shutdown showed DEGRADED/OFFLINE stale-state messaging and disabled owner changes. After the shutdown fix, Core exited cleanly and the native client automatically returned to LIVE with the same owner revision, sync watermark and device count. No duplicate operational state appeared. Revoked-session rejection was also physically observed.                                                              |
+
+## Shutdown correction and automated verification
+
+Physical reconnect testing exposed an ordering deadlock: the production database onClose hook awaited pool shutdown while the realtime LISTEN connection was held until a later onClose hook. Move realtime cleanup to preClose, before pool shutdown; release any connection acquired after stopping begins. No authentication or secure-storage control changed.
+
+The regression test reproduced the hang before the fix, then passed afterward with a live WebSocket and the same database-ownership hook order as production. The corrected compiled Core subsequently exited with code 0 during the real native-client test and reconnected successfully after relaunch. `pnpm check` passed formatting, lint, strict types, 31 unit/contract/API/render tests and builds. `pnpm test:integration` passed all 18 real PostgreSQL tests, including the new shutdown regression. The current native macOS bundle was rebuilt and used for physical checks; Rust/native implementation remains unchanged.
+
+[Final hosted validation](https://github.com/Taxcut/JARVIS/actions/runs/35567260762) passed `typescript` (Linux), `native (macos-latest)` and `native (windows-latest)` on `1d2857eef87a12e56e97b9e4168807115de50231`. The following closure commit changes documentation only and skips duplicate CI; its implementation is identical to this tested checkpoint. Earlier [hosted validation](https://github.com/Taxcut/JARVIS/actions/runs/35545676708) passed Linux/macOS/Windows on `c61e99e1855f31c0161c06832a04bac73b083f37`; original [Phase 2 validation](https://github.com/Taxcut/JARVIS/actions/runs/35530976129) passed on `16dfe950315d1d63aa7e30cb7dae78dbaa886c8c`. Preserve these historical results separately from the new checkpoint.
+
+## Final secrets and repository review
+
+Supplied-secret/high-confidence token/private-key scans passed across candidate files and reachable Git history. A hash-based scan against the current recovery set found no raw codes in those files/history or compiled frontend assets, without printing or retaining the codes. The built frontend contains no local/provider credentials; no personal home paths entered tracked content. `.env` remains ignored and mode 0600. Native device keys and refresh material still use OS secure storage only. The owner-facing replacement codes were never captured by the agent.
+
+The code fix and validation evidence are committed/pushed on `feat/phase2-identity-sync`; the final closure is documentation only. Keep PR #1 ready for review and unmerged. No Prompt #3 work was started.
+
+## Owner configuration and remaining boundaries
+
+The sanitized owner document remains incorporated in OWNER_CONFIGURATION, VOICE, ARCHITECTURE, SECURITY and JARVISSETUP. Provider credentials stay private, ignored and unused by Phase 2; preferences and infrastructure requirements remain planned only. Fresh databases contain no operational fixtures. The owner database contains only real authorized setup/security actions.
+
+Windows hosted compilation/tests passed previously; Windows Hello registration/assertion, Credential Manager persistence and Gaming PC acceptance are intentionally deferred, not failed. Future production roles, remote hosting, signed installers, voice, phone, execution and all-trusted-device-loss offline recovery remain documented later work. No Prompt #3 work or merge is authorized by this closure.
+
+## Preserved Phase 1 closure
+
+Phase 1 — Foundation / Prompt #1 **COMPLETE**. Local verification and hosted Linux/macOS/Windows validation satisfy the Phase 1 acceptance criteria. The former hosted-CI blocker is resolved. Prompt #2 macOS physical acceptance has since passed on `feat/phase2-identity-sync`; current closure evidence is recorded above. Last verified 2026-09-20 on Apple Silicon macOS, Node 24.21.0, pnpm 12.4.2, Rust 1.98.1 and Docker 29.8.0.
 
 ## Completed
 
@@ -17,11 +54,11 @@ Phase 1 — Foundation / Prompt #1 **COMPLETE**. Local verification and hosted L
 
 ## In Progress
 
-None for Prompt #1. All Phase 1 acceptance criteria are satisfied; no active external blocker remains.
+No Phase 2 macOS acceptance work remains. PR #1 awaits owner review/merge decision. Windows physical testing is intentionally deferred to the Gaming PC. Phase 1 remains complete.
 
 ## Not Started
 
-Phase 2+ identity/passkeys, enrollment, background runtime execution, approvals/signing/replay protection, voice/wake word, missions, memory, automations, remote, phone/SMS, AURA, production deployment, installers/updater and operational backup services.
+Phase 3+ background runtime execution, voice/wake word, missions, memory, automations, remote, phone/SMS, AURA, production deployment, installers/updater and operational backup services.
 
 ## Known Issues
 
@@ -43,9 +80,9 @@ The API client rejects redirects and non-loopback endpoints. Setup fields cannot
 
 ## Next Recommended Work
 
-Prompt #1 is closed. Await a separate instruction before starting Prompt #2 or any deployment work. Track the Actions Node 20 deprecation notices as future maintenance.
+Owner review of PR #1, then later owner-authorized Gaming PC physical validation. Do not start Prompt #3 or deployment work. Track the Actions Node 20 deprecation notices as future maintenance.
 
-## Verification Commands and Results
+## Preserved Phase 1 verification commands and results
 
 | Verification               | Evidence                                                                                                                                                                                                                          |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -61,9 +98,9 @@ Prompt #1 is closed. Await a separate instruction before starting Prompt #2 or a
 
 Use `pnpm rust:check` and `cargo build --workspace --locked` after `pnpm build`. Use `pnpm --filter @jarvis/core dev` plus `pnpm desktop` for native development. See JARVISSETUP for environment generation and recovery details.
 
-The development database contains one real Core verification audit event from verification and no users or devices. A new clone/database starts empty. Test fixtures exist only inside disposable test databases.
+At Phase 1 closure, the development database contained one real Core verification audit event and no users or devices. Phase 2 owner-authorized onboarding has now created one real owner, one trusted Mac, one active passkey, one active session plus its revoked predecessor, and eight unused recovery-code hashes. The owner confirmed saving the current replacement codes privately. No test fixtures entered the development database. A new clone/database starts empty. Test fixtures exist only inside disposable test databases.
 
-## Hosted closure evidence
+## Preserved Phase 1 hosted closure evidence
 
 | Hosted job                | Platform                | Validate #5 result                                                                            |
 | ------------------------- | ----------------------- | --------------------------------------------------------------------------------------------- |

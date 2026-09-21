@@ -36,7 +36,7 @@ export function createDatabase(url: string) {
     async ready() {
       await db.execute(sql`select 1`);
       const rows = await db.select().from(schema.schemaMetadata);
-      if (rows.length !== 1 || rows[0]?.version !== 1)
+      if (rows.length !== 1 || rows[0]?.version !== 3)
         throw new Error('Schema not current');
     },
     async setup(): Promise<SetupStatus> {
@@ -44,14 +44,35 @@ export function createDatabase(url: string) {
         .select()
         .from(schema.setupState)
         .where(eq(schema.setupState.id, 1));
+      const owner = (await pool.query('SELECT id FROM users LIMIT 1')).rows[0];
+      const recovery = owner
+        ? (
+            await pool.query(
+              'SELECT id FROM recovery_codes WHERE owner_id=$1 AND consumed_at IS NULL LIMIT 1',
+              [owner.id],
+            )
+          ).rowCount
+        : 0;
+      const enrolled = owner
+        ? (
+            await pool.query(
+              "SELECT id FROM devices WHERE owner_id=$1 AND trust_state='trusted' AND revoked_at IS NULL LIMIT 1",
+              [owner.id],
+            )
+          ).rowCount
+        : 0;
       return {
         configured: false,
         core: row[0]?.coreVerified ? 'verified' : 'not_configured',
-        owner: 'not_implemented',
-        deviceEnrollment: 'not_implemented',
+        owner: owner ? 'ready' : 'required',
+        deviceEnrollment: enrolled ? 'ready' : 'required',
         voice: 'not_implemented',
         phoneLink: 'not_implemented',
-        security: 'setup_required',
+        security: !owner
+          ? 'setup_required'
+          : recovery
+            ? 'ready'
+            : 'recovery_required',
         systemTest: 'not_implemented',
       };
     },

@@ -1,0 +1,21 @@
+[package]
+name = "jarvis-identity"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.88"
+[dependencies]
+ed25519-dalek = "3.0.0"
+getrandom = "0.4"
+sha2 = "0.10"
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+zeroize = { version = "1", features = ["derive"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+url = "2"
+open = "5"
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+keyring = "4.2.0"
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt", "time"] }

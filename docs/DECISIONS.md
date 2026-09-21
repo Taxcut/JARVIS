@@ -39,3 +39,40 @@ A temporary workflow containing only a single Ubuntu echo step reproduced the sa
 The owner reports resolving account-side Actions eligibility/billing by correcting the Actions budget/payment setup. Preserve the earlier zero-job diagnostics as history, clearly marked resolved. The successful run independently verifies restored hosted execution; the exact internal GitHub cause remains unexposed and is not inferred beyond that evidence.
 
 Record the current Node 20 deprecation notices for checkout/setup-node/pnpm setup actions as non-blocking future maintenance. Do not change dependencies or workflow versions during this closure. The InterServer constrained-VPS plan remains documentation only; nothing is deployed.
+
+## 2026-09-20: Phase 2 identity and synchronization
+
+Use standards-based SimpleWebAuthn ceremonies in the system browser on macOS and Windows. Native Rust owns Ed25519 device keys and refresh credentials in OS secure storage. Browser completion and desktop redemption use separate short-lived one-use secrets; only the native device can redeem session material. Exact RP/origin validation and required user verification remain enabled. PostgreSQL provides durable challenges, nonces, purpose-bound grants and transactional ordered sync events. Physical Touch ID and Windows Hello validation will be recorded separately from automated tests. No execution capability is introduced.
+
+- Keep the existing `users` anchor as the canonical singleton owner; enforce uniqueness in SQL rather than introduce tenants or generic RBAC.
+- Use SimpleWebAuthn 14 with required UV/resident credentials and a system-browser adapter. Native WebView WebAuthn is not a dependency. Official server/browser documentation was checked before implementation.
+- Use Ed25519 via maintained native/library implementations and keyring 4 platform stores, with a public cross-language fixture. No fallback files or raw signing IPC.
+- Serialize personal-owner security transactions with a PostgreSQL advisory lock, parameterized SQL and transactional audit/outbox. The same database supplies durable rate buckets and replay prevention; avoid Redis/Kafka.
+- Realtime batches carry safe authoritative snapshots plus ordered events. This bounds client complexity and prevents independent client state from drifting. Retention gaps force resync; sequence strings preserve bigint precision.
+- Recovery requires both a one-use high-entropy code and an already-trusted device key, followed by new-passkey registration. Loss of every trusted device remains an explicit offline-recovery limitation. Recovery replaces prior passkeys/session authority.
+- Preserve historical Phase 1 CI evidence and non-blocking Node-action warnings. Phase 2 requires fresh hosted Linux/macOS/Windows evidence; physical biometric validation is separately identified.
+- Correct the future wake-word architecture to sherpa-onnx; do not implement voice or Prompt #3.
+
+## 2026-09-20: Reconcile the owner configuration without activating future systems
+
+Historical checkpoint: the Mac deferral and Windows-as-blocker wording below are superseded by the owner-authorized 2026-09-21 acceptance decision.
+
+Incorporate the sanitized `jarvis setup info.txt` requirements in OWNER_CONFIGURATION. Preserve America/New_York, `bm_george`, weekday noon, Saturday 07:00 and the remaining weekend window, plus five call retries with counting semantics still to clarify. Missing retry interval and undefined “BOTH” fallback remain future phone-phase questions. Preserve the existing InterServer decision where source fields are blank. No schedules, voice models, provider integrations, purchases or fake readiness records are created.
+
+Keep supplied provider secrets in existing private local configuration only; track blank variable names and distinguish presence from verified access. A phone value that fails E.164 validation is not imported or guessed. Kokoro output remains a separate future adapter from OpenAI Realtime conversation. The disconnected UI must describe unknown devices/security as requiring sign-in, rather than asserting that no owner/devices exist.
+
+[Phase 2 Validate](https://github.com/Taxcut/JARVIS/actions/runs/35530976129) succeeded on `16dfe950315d1d63aa7e30cb7dae78dbaa886c8c` for Linux TypeScript/database and both macOS/Windows native jobs. Preserve this evidence and rerun hosted validation for the UI correction. Owner-deferred Keychain/restart/sign-in/recovery/native GUI checks and Windows physical testing prevent a complete Phase 2 acceptance claim. Keep the PR draft and unmerged; do not start Prompt #3. Node 20 action warnings remain future maintenance.
+
+The continuation's [fresh hosted run](https://github.com/Taxcut/JARVIS/actions/runs/35545676708) subsequently passed all three jobs on `c61e99e1855f31c0161c06832a04bac73b083f37`. Targeted local desktop tests/typecheck/lint/build and the built first-run browser review also passed. Record the evidence in a documentation-only handoff commit with duplicate CI skipped; no source, dependency or workflow changes follow the tested checkpoint. This closes the configuration reconciliation and feasible automated work, not the deferred physical acceptance.
+
+## 2026-09-21: Complete real Mac acceptance; defer Gaming PC physical testing
+
+The owner resumed Mac validation and explicitly made Windows Hello/Credential Manager physical testing a later, non-blocking Gaming PC task. The real Mac retained its Keychain identity and resumed its signed session after native restart. Purpose-bound passkey step-up revoked the prior session; protected realtime access stopped and a new real browser sign-in restored it. Owner recovery codes were generated, then replaced after the owner reported not saving the first set. The owner saved and hid the replacement set; old rows were removed, hashes only persisted and CRITICAL audit evidence remained. No raw recovery material was inspected. Recovery setup satisfies this request; destructive code-consumption recovery remains automated evidence, not a claimed physical test.
+
+Authenticated Owner/Security/Devices/Approvals and real Core disconnect/reconnect were checked. Windows physical acceptance remains intentionally deferred, not failed; hosted Windows CI is separately required. Prepare PR #1 for review once fresh CI passes. Do not merge automatically or start Prompt #3.
+
+## 2026-09-21: Release realtime resources before closing the owned pool
+
+Physical shutdown exposed a deadlock between reverse-ordered onClose hooks: main ended the PostgreSQL pool before realtime could return its LISTEN connection. Realtime now closes peers/timers/listener in preClose, and a connection acquired after shutdown begins is immediately returned. A real PostgreSQL/live-WebSocket regression uses production's pool-ownership order, failed before the fix and passes after it. A second physical Core restart confirmed clean exit and native automatic reconnection. Authentication, durable replay, grants and native Keychain behavior are unchanged. Fresh hosted validation is required for this focused code fix.
+
+Closure evidence: [Validate](https://github.com/Taxcut/JARVIS/actions/runs/35567260762) passed Linux TypeScript/database and both macOS/Windows native jobs on `1d2857eef87a12e56e97b9e4168807115de50231`. Together with the real Mac acceptance above and passing local gates, this completes the owner's current Phase 2 macOS acceptance scope. Windows physical testing stays intentionally deferred. Record this in a documentation-only commit with duplicate CI skipped, mark PR #1 ready for owner review, and leave it unmerged. No Prompt #3 work begins.

@@ -6,7 +6,7 @@ export default defineConfig({
       'apps/core/**/*.test.ts',
       'apps/desktop/src/**/*.test.ts',
     ],
-    exclude: ['**/integration.test.ts', '**/node_modules/**'],
+    exclude: ['**/*integration.test.ts', '**/node_modules/**'],
     clearMocks: true,
   },
 });

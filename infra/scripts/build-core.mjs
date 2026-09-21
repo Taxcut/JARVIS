@@ -15,7 +15,7 @@ await build({
         builder.onResolve({ filter: /^@jarvis\// }, (args) => ({
           path: fileURLToPath(
             new URL(
-              `../../packages/${args.path.slice(8)}/src/index.ts`,
+              `../../packages/${args.path.slice(8).split('/')[0]}/src/${args.path.includes('/signing') ? 'signing' : 'index'}.ts`,
               import.meta.url,
             ),
           ),

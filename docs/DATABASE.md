@@ -1,33 +1,42 @@
 # Database
 
-PostgreSQL 17 is authoritative; local Docker Compose publishes only `127.0.0.1:54329`. No product records are seeded. The sole initial row is technical schema version metadata. No fake users, devices, events or setup completion are inserted.
+PostgreSQL 17 is authoritative. Local Compose publishes only `127.0.0.1:54329`. A fresh schema contains only compatibility metadata, never a seeded owner, device, passkey, session, approval, event or setup completion.
 
-## Tables
+## Entities
 
-| Table                        | Purpose                                                                                                         |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| users                        | Future owner identity anchor; no authentication implemented                                                     |
-| devices                      | Owner reference, UUID, OS/architecture, runtime version, public key, enrollment/trust, last seen and revocation |
-| capabilities                 | Future persisted registry, separate from the versioned code registry used by policy today                       |
-| device_capabilities          | Normalized device capability assignments                                                                        |
-| policy_rules                 | Device-scoped ALLOW/ASK/DENY rules; persistence boundary, not an exposed configuration API                      |
-| audit_events                 | Validated events with actor/device, action, outcome, request/correlation/approval references and safe metadata  |
-| setup_state                  | Singleton row created only by real Core verification                                                            |
-| schema_metadata              | Application schema compatibility version                                                                        |
-| drizzle.__drizzle_migrations | Drizzle migration ledger                                                                                        |
+| Table                                             | Purpose                                                                                                                                         |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| users                                             | Sole canonical owner: UUID, optional display name, Sir address, revisions, NORMAL/LOCKDOWN and durable sync watermark; singleton CHECK + UNIQUE |
+| devices                                           | Owner-bound UUID/public key, fingerprint, platform, trust/enrollment, enrollment/last-seen/revocation timestamps and revision                   |
+| passkeys                                          | Unique WebAuthn credential ID, COSE public key, counter, transports, backup metadata, name and revocation history                               |
+| auth_ceremonies                                   | Immutable candidate/context, browser/redemption hashes, public challenge, proof/verification/redemption states and expiry                       |
+| sessions                                          | Owner/device/security-revision binding, opaque credential hashes, access/idle/absolute expiry and revocation history                            |
+| replay_nonces                                     | Unique session + nonce hash and short durable replay retention                                                                                  |
+| step_up_grants                                    | Hashed one-use purpose/target/owner/device/session-bound authority                                                                              |
+| recovery_codes                                    | Hashed high-entropy codes and consumption time                                                                                                  |
+| device_enrollments                                | Hashed pairing secret, immutable candidate/fingerprint, source device, owner decision and revision                                              |
+| approval_requests                                 | Durable source/capability/risk/summary/status/expiry, idempotency and deciding session; execution is CHECK-constrained false                    |
+| sync_events / sync_tickets                        | Ordered durable safe owner events; one-use short-lived WebSocket admission                                                                      |
+| security_rate_limits                              | Durable bounded-window abuse buckets                                                                                                            |
+| audit_events                                      | Append-oriented safe lifecycle records with risk, outcome and tracing IDs                                                                       |
+| setup_state                                       | Real Core verification progress, created only after a successful check                                                                          |
+| capabilities / device_capabilities / policy_rules | Preserved Phase 1 policy persistence boundaries; no execution exposed                                                                           |
+| schema_metadata / drizzle.__drizzle_migrations    | Compatibility version 3 and migration ledger                                                                                                    |
 
-Stable entity IDs use UUIDs. All instants use `timestamptz`; connections use UTC and API timestamps use ISO 8601. Integration tests verify offset input normalizes correctly. Typed relational fields and constraints carry the domain; JSON is restricted to extension metadata. No private key columns exist. Approval references are nullable identifiers pending a future approval domain, not evidence that an approval occurred.
+UUID entity IDs and `timestamptz` are used throughout. Connections set UTC; API timestamps are ISO 8601. JSON is limited to typed device candidates, transport metadata and safe event payloads; public projection queries explicitly exclude authentication material. No device private key columns exist. Passkey public keys and session/recovery hashes do not confer authentication by themselves.
 
-## Migrations
+## Migrations and transactions
 
-`pnpm db:migrate` applies the checked-in SQL and Drizzle journal in `infra/migrations`. Migrations are explicit, reviewed SQL mirrored in `packages/database/src/schema.ts`, including native constraints/triggers. Do not use schema push in deployment or rewrite an applied migration. Add numbered forward migrations and update the journal plus compatibility version check. Run migration tests from an empty database and against a representative previous schema before rollout. Run one migration job at a time; Core never auto-migrates.
+`0000_foundation.sql` remains unchanged. Forward migration `0001_identity_sync.sql` extends the existing empty identity anchors, creates Phase 2 relations/indexes/constraints and advances compatibility to 2. `0002_device_key_constraints.sql` adds canonical Ed25519 encoding/fingerprint constraints and advances compatibility to 3. It is a separate migration because the first Phase 2 migration had already been applied for physical validation; applied migrations are preserved. Both fresh creation and repeated migration are covered by isolated PostgreSQL tests. Owner uniqueness intentionally refuses a previously contaminated database with multiple users; it does not silently select or delete an owner. Do not edit migrations once deployed; use another numbered migration and journal entry. Core never auto-migrates.
 
-Readiness checks connectivity and supported schema version, so an empty or unsupported database is not ready. Liveness does not depend on PostgreSQL. Setup verification persists its check and audit event atomically. Audit mutations are rejected by database triggers; owners/superusers remain able to alter the schema. A separate least-privilege runtime role and migration role are required before production deployment.
+Drizzle provides the schema/migrator and foundation access. Phase 2 uses parameterized SQL through the same pool for explicit conditional writes, advisory transaction locks and one-use security transitions. Every externally visible mutation records an audit row and sync event in its transaction. Nonce acceptance and durable rate accounting intentionally commit independently so retries/failures cannot reset them. Assertion savepoints preserve challenge consumption when verification fails. Refresh rechecks its hash in the rotation transaction.
 
-`pnpm test:integration` creates a uniquely named ephemeral PostgreSQL container with random credentials and an ephemeral loopback port, runs migration, constraints, UTC, audit and transaction tests, then removes only that container. Test fixtures never enter the development volume. Tests do not accept the development DATABASE_URL as a reset target.
+The single-owner advisory lock is transaction-scoped and shared across Core processes. Resource revisions prevent stale writes. Database uniqueness backs singleton ownership, credential IDs, device public keys, session hashes, nonces and idempotency keys. The migration is authoritative for all CHECKs and indexes; typed schema definitions describe access fields. Audit mutation triggers remain intact. Database owners can disable triggers; a separate least-privilege runtime role is a later production requirement.
 
-## Future domains and recovery
+## Retention and recovery
 
-Passkeys, sessions, credentials history and approvals require real authentication/enrollment implementation first. Conversations/messages, missions/steps, memories, automations, notifications, calls/SMS, remote sessions and system-event projections are future domains, not placeholder tables. Audit is the initial event persistence store. pgvector can be introduced by a future extension migration without replacing PostgreSQL.
+A minute maintenance pass expires pending approvals/enrollments with audit+sync evidence; removes expired ceremonies/grants/nonces/tickets/rate buckets; revokes expired sessions and clears their credential hashes; and prunes sync events older than 24 hours or outside approximately the latest 10,000 sequences. Sessions, revoked devices and enrollment/approval decision history are retained. Snapshots return the newest 100 sessions/enrollments/approvals and 50 audit entries; older history stays in PostgreSQL. The owner watermark persists even when the replay table empties. Requests independently enforce expiry, so delayed cleanup cannot extend authority.
 
-Development data survives `pnpm db:down`. Before future deployments, define encrypted scheduled `pg_dump` backups, retention, off-host storage, tested restores and recovery objectives. None of those services is configured by Phase 1. Never delete volumes as routine troubleshooting.
+`pnpm test:integration` creates a disposable PostgreSQL container with random credentials and a loopback ephemeral port. Identity tests create a second database inside that container; fixtures never enter the development volume. Tests exercise real WebAuthn cryptography, constraints, replay races, rotation, recovery and multiple sockets/Core restart. The runner never resets the development DATABASE_URL.
+
+`pnpm db:down` preserves the development volume. Never delete volumes as troubleshooting. Encrypted scheduled off-host backups, retention, restore rehearsals and recovery objectives remain mandatory future deployment work. Passkey recovery is not a database backup. Future conversations/memory/missions/phone/remote domains are not implemented or seeded.

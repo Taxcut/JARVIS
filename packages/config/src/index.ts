@@ -13,6 +13,24 @@ export const environmentSchema = z.object({
   JARVIS_HOST: z.literal('127.0.0.1').default('127.0.0.1'),
   JARVIS_PORT: z.coerce.number().int().min(1024).max(65535).default(4310),
   DATABASE_URL: postgresUrl,
+  JARVIS_RP_ID: z
+    .string()
+    .regex(/^[a-z0-9.-]+$/)
+    .default('localhost'),
+  JARVIS_AUTH_ORIGIN: z
+    .string()
+    .url()
+    .refine((value) => {
+      const url = new URL(value);
+      return (
+        url.origin === value &&
+        !url.username &&
+        !url.password &&
+        (url.protocol === 'https:' ||
+          (url.protocol === 'http:' && url.hostname === 'localhost'))
+      );
+    }, 'Authentication requires an exact HTTPS or localhost origin')
+    .default('http://localhost:4310'),
   JARVIS_API_TOKEN: z
     .string()
     .regex(
@@ -29,5 +47,9 @@ export const environmentSchema = z.object({
 });
 export type Environment = z.infer<typeof environmentSchema>;
 export function parseEnvironment(input: unknown): Environment {
-  return environmentSchema.parse(input);
+  const result = environmentSchema.parse(input);
+  const host = new URL(result.JARVIS_AUTH_ORIGIN).hostname;
+  if (host !== result.JARVIS_RP_ID && !host.endsWith(`.${result.JARVIS_RP_ID}`))
+    throw new Error('Authentication origin does not match RP ID');
+  return result;
 }

@@ -1,33 +1,43 @@
 # Architecture
 
-## Implemented in Phase 1
+JARVIS is a single-owner local desktop and modular Node/Fastify Core. PostgreSQL is the sole authoritative database. Phase 2 adds identity/security/realtime to the Phase 1 pnpm/Tauri/React foundation without an execution runtime or external identity service.
 
-The desktop is a presentation process: React handles navigation and clean empty states inside Tauri 2. Native IPC privileges are empty. The desktop talks to a separate Node/Fastify Core over an authenticated loopback HTTP API. The bootstrap token stays in UI memory and is never put in localStorage, source code or a frontend environment variable. Configuration is typed at startup.
-
-Core is a modular monolith. HTTP transport, environment validation, shared contracts, policy and persistence are distinct modules. PostgreSQL is authoritative; Drizzle maps typed columns and explicit reviewed migrations. No services, Redis, Kafka or cloud orchestration are required. Setup verification and its audit event commit in one transaction.
-
-The shared packages use TypeScript source exports for monorepo consumers; Core and desktop build pipelines resolve and validate those contracts. Native Rust workspace compilation is separate. The runtime crate reports unavailable execution; it does not claim a background agent is running.
-
-## Process and authority boundaries
+## Process boundaries
 
 ```text
-Desktop UI → authenticated Core API → typed services → PostgreSQL
-Future model request → capability → external policy → owner approval
-  → signed, scoped execution authorization → independent native runtime
+React UI → narrow Tauri identity commands → Rust native client
+  → signed loopback Core API → identity/security transactions → PostgreSQL
+Rust → system browser → WebAuthn user verification → Core
+PostgreSQL committed sync events + NOTIFY → Core WebSocket → React projection
+Future model request → capability/policy → owner decision
+  → separate future execution authorization → independent native runtime
 ```
 
-No model, execution gateway, credential issuer or approvals UI exists in this phase. ALLOW means a policy decision, never a signed execution credential. Closing the dashboard must eventually leave the independent runtime/service running; that service lifecycle is deferred. Today closing the UI does not stop the separately started Core, and no background runtime is installed.
+React receives public identity, safe authoritative snapshots and one-time sync tickets. It never receives device private keys or durable refresh credentials. Rust holds signing/access material and uses native Keychain/Credential Manager for persistence. Browser registration/authentication and native redemption use distinct one-use secrets. The same standards-based passkey verifier and browser UI serve macOS and Windows. Tauri webview WebAuthn is not relied upon.
 
-Devices will enroll an owner-bound stable UUID and public key, then negotiate versioned capabilities. Enrollment, proof of possession, revocation distribution and passkeys remain unimplemented. Keys must remain local to Keychain/Windows secure storage. `devices` never stores private keys.
+## Modules
+
+- `packages/config`, `schemas`, `protocol`: validated environment, capabilities, identities, API/auth/sync contracts.
+- `packages/security`: fail-closed policy; the separate Node signing export defines canonicalization and verification without shipping Node crypto into the browser.
+- `packages/database`: typed Drizzle schema, migration readiness and foundation setup persistence.
+- `apps/core`: identity store, WebAuthn service, signed transport, mutation service and realtime delivery. Security queries use parameterized PostgreSQL transactions and explicit safe projections alongside Drizzle's typed schema/migrations.
+- `crates/identity`: platform secure-store abstraction, signing, session rotation and system-browser adapter. `crates/runtime` still reports execution unavailable.
+- `apps/desktop`: existing visual shell, real Owner/Security/Devices/Approvals screens and in-memory authoritative projections. No independent persistent client database.
+
+## Transaction and synchronization model
+
+A transaction-scoped PostgreSQL advisory lock serializes mutations for the single owner. This deliberately favors clear security semantics over unnecessary multi-tenant throughput. It also ensures event sequence allocation commits in the same order. Resource revisions detect stale writes; conflicts return 409. State changes, audit rows and safe versioned sync events are atomic. PostgreSQL NOTIFY wakes connected clients only after commit, while durable events support replay after process failure. No polling loop is the primary state transport. During shutdown, realtime preClose cleanup returns the dedicated LISTEN connection before the database-owner onClose hook ends the pool; pending connection acquisition observes the stopping flag.
+
+WebSocket entry requires a 30-second one-use ticket issued by a signed session. Batches include ordered events and a safe current snapshot from the same transaction. Clients retain the last confirmed sequence in memory, discard duplicate batches, reject out-of-order/gapped batches and request authoritative resync on reconnect. Expired retention/future cursors force a full snapshot. A persistent owner watermark survives event cleanup. On app restart, secure session resume precedes a full snapshot. A 15-second heartbeat checks connection health/session validity; the UI marks stale/disconnected state and disables changes.
+
+A single bounded minute maintenance task expires security records, clears challenge/grant/nonce/ticket/rate debris, revokes expired sessions and retains at most a bounded replay window. Historical devices/sessions/approvals/enrollments remain inspectable; expired secret-bearing transient rows are removed. PostgreSQL pool size is five, with one connection reserved while LISTEN is active. Realtime is capped at 32 sockets and applies backpressure. These choices preserve the planned InterServer 1 vCPU/2 GB baseline; deployment has not occurred.
 
 ## Preserved future boundaries
 
-- Voice: local Porcupine wake phrases, arbitration and Realtime conversation; see VOICE.
-- Remote: native capture/encoding/secure transport; see REMOTE.
-- Computer control: native APIs, then macOS Accessibility / Windows UI Automation, then shell / PowerShell, vision and input fallback. Every route requires policy authorization.
-- Browser automation: future Playwright adapter behind typed capabilities.
-- Phone/SMS: LiveKit, SIP and Twilio adapters; owner phone configuration is optional and currently unused.
-- Semantic memory: future pgvector extension in PostgreSQL; no separate vector store.
-- AURA: a separate product accessed only through an AURA Control API with narrowly delegated authority. No AURA tables or inherited JARVIS privileges.
+- Voice: local **sherpa-onnx**, wake arbitration and OpenAI Realtime conversation, with a separate planned Kokoro synthesis adapter for the owner-selected `bm_george` output; documentation only in this phase. See VOICE and OWNER_CONFIGURATION.
+- Remote: native capture/encoding/secure transport; no implementation.
+- Computer control: future native APIs, Accessibility/UI Automation and narrowly authorized tool adapters. No privileged IPC exists today.
+- Browser automation, LiveKit/Twilio phone/SMS, semantic memory/pgvector, missions and automations remain separate later work.
+- AURA remains a distinct product with an explicit delegated Control API and no inherited JARVIS authority.
 
-JARVIS addresses its owner as Sir, uses adaptive response length and a refined, calm, competent tone with subtle dry humor. This is legally distinct original design; no movie dialogue, copyrighted assets or actor voice cloning.
+Closing the desktop does not stop separately started Core, but no always-on native service is installed. JARVIS defaults to addressing the owner as Sir. Overall product setup remains false: identity completion does not imply voice/phone/remote/deployment readiness. Fresh installs seed no operational records.

@@ -545,3 +545,97 @@ footer {
     line-height: 1.8;
   }
 }
+
+/* Identity screens retain the foundation's restrained visual language. */
+.identity-panel {
+  padding: 28px;
+  margin-top: 20px;
+}
+.identity-panel p {
+  color: #9db0bd;
+  line-height: 1.7;
+}
+.identity-panel form {
+  max-width: 520px;
+}
+.identity-panel label {
+  display: block;
+  margin: 16px 0;
+}
+.identity-panel input {
+  width: 100%;
+  margin-top: 8px;
+}
+.identity-panel button {
+  padding: 10px 15px;
+  border: 1px solid #385262;
+  background: #112430;
+  color: #d6edf6;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.identity-panel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.identity-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 0;
+  border-bottom: 1px solid #233342;
+}
+.identity-row h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+.identity-row small,
+.audit-row small {
+  color: #8198a8;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0;
+}
+.identity-panel details {
+  margin: 18px 0;
+}
+.identity-panel summary {
+  cursor: pointer;
+  color: #a2c5d5;
+}
+.identity-panel code {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  display: block;
+  margin: 10px 0;
+}
+.secret-box {
+  border: 1px solid #506978;
+  background: #071018;
+  padding: 20px;
+  margin-top: 20px;
+}
+.inline-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.audit-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 0;
+  font-size: 13px;
+}
+@media (max-width: 900px) {
+  .identity-row,
+  .audit-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

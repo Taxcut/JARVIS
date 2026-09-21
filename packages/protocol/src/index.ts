@@ -18,16 +18,16 @@ export const systemSchema = z.strictObject({
   name: z.literal('JARVIS Core'),
   version: z.string(),
   protocolVersion: z.literal(1),
-  phase: z.literal(1),
+  phase: z.literal(2),
 });
 export const setupStatusSchema = z.strictObject({
   configured: z.literal(false),
   core: z.enum(['not_configured', 'verified']),
-  owner: z.literal('not_implemented'),
-  deviceEnrollment: z.literal('not_implemented'),
+  owner: z.enum(['not_implemented', 'required', 'ready']),
+  deviceEnrollment: z.enum(['not_implemented', 'required', 'ready']),
   voice: z.literal('not_implemented'),
   phoneLink: z.literal('not_implemented'),
-  security: z.literal('setup_required'),
+  security: z.enum(['setup_required', 'recovery_required', 'ready']),
   systemTest: z.literal('not_implemented'),
 });
 export type SetupStatus = z.infer<typeof setupStatusSchema>;
@@ -40,6 +40,36 @@ export const errorSchema = z.object({
   }),
 });
 export const eventTypeSchema = z.enum([
+  'owner.created',
+  'owner.update',
+  'passkey.created',
+  'passkey.rename',
+  'passkey.revoke',
+  'device.enrolled',
+  'device.rename',
+  'device.revoke',
+  'enrollment.created',
+  'enrollment.requested',
+  'enrollment.approved',
+  'enrollment.denied',
+  'enrollment.expired',
+  'enrollment.consumed',
+  'session.created',
+  'session.refreshed',
+  'session.revoke',
+  'session.expired',
+  'authentication.succeeded',
+  'authentication.failed',
+  'request.replay_rejected',
+  'request.signature_rejected',
+  'recovery.used',
+  'recovery.regenerated',
+  'security.recovered',
+  'lockdown.entered',
+  'lockdown.exited',
+  'approval.requested',
+  'approval.decided',
+  'approval.expired',
   'core.setup.verified',
   'device.connected',
   'device.disconnected',
@@ -69,6 +99,8 @@ export const eventSchema = z.strictObject({
   outcome: z.enum(['requested', 'allowed', 'denied', 'succeeded', 'failed']),
   approvalId: z.uuid().nullable(),
   metadata: z.strictObject({
+    resourceId: z.uuid().optional(),
+    resourceRevision: z.int().positive().optional(),
     reasonCode: z
       .string()
       .regex(/^[A-Z0-9_]{1,64}$/)
@@ -95,3 +127,5 @@ export const deviceMessageSchema = z.discriminatedUnion('type', [
 ]);
 
 export const setupVerifySchema = z.strictObject({});
+
+export * from './identity.js';
