@@ -137,21 +137,6 @@ pub fn verify_server(pipe: &tokio::net::windows::named_pipe::NamedPipeClient) ->
     }
     Ok(())
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[tokio::test]
-    async fn named_pipe_is_exclusive_and_checks_server_owner() {
-        let name = format!(r"\\.\pipe\jarvis-runtime-test-{}", uuid::Uuid::new_v4());
-        let server = pipe_at(&name, true).unwrap();
-        assert!(pipe_at(&name, true).is_err());
-        let client = tokio::net::windows::named_pipe::ClientOptions::new()
-            .open(&name)
-            .unwrap();
-        server.connect().await.unwrap();
-        verify_server(&client).unwrap();
-    }
-}
 pub fn startup(enable: Option<bool>) -> Result<String, String> {
     let path = super::helper_path()?;
     let command = format!(
@@ -324,5 +309,21 @@ pub fn observe(tx: Sender<Event>) {
         }
         WTSUnRegisterSessionNotification(window);
         DestroyWindow(window);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[tokio::test]
+    async fn named_pipe_is_exclusive_and_checks_server_owner() {
+        let name = format!(r"\\.\pipe\jarvis-runtime-test-{}", uuid::Uuid::new_v4());
+        let server = pipe_at(&name, true).unwrap();
+        assert!(pipe_at(&name, true).is_err());
+        let client = tokio::net::windows::named_pipe::ClientOptions::new()
+            .open(&name)
+            .unwrap();
+        server.connect().await.unwrap();
+        verify_server(&client).unwrap();
     }
 }
