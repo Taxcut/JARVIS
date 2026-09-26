@@ -1,3 +1,4 @@
+import { runtimePresenceSchema } from './runtime.js';
 import { z } from 'zod';
 import { capabilitySchema, riskSchema } from '@jarvis/schemas';
 export const versioned = { version: z.literal(1) };
@@ -190,6 +191,7 @@ export const passkeyViewSchema = z.strictObject({
   revokedAt: z.string().nullable(),
 });
 export const sessionViewSchema = z.strictObject({
+  kind: z.enum(['owner', 'runtime']).optional(),
   id: z.uuid(),
   deviceId: z.uuid(),
   revision: z.int(),
@@ -236,6 +238,7 @@ export const snapshotSchema = z.strictObject({
   sessions: z.array(sessionViewSchema),
   enrollments: z.array(enrollmentViewSchema),
   approvals: z.array(approvalViewSchema),
+  runtimePresence: z.array(runtimePresenceSchema).optional(),
   recoveryCodesRemaining: z.int().nonnegative(),
   audit: z.array(
     z.strictObject({

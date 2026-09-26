@@ -192,6 +192,7 @@ export const passkeys = pgTable('passkeys', {
   revision: integer('revision').notNull(),
 });
 export const sessions = pgTable('sessions', {
+  kind: text('kind').notNull().default('owner'),
   id: uuid('id').primaryKey(),
   ownerId: uuid('owner_id')
     .references(() => users.id)
@@ -326,5 +327,23 @@ export const syncTickets = pgTable('sync_tickets', {
 export const securityRateLimits = pgTable('security_rate_limits', {
   key: text('key').notNull(),
   count: integer('count').notNull(),
+  expiresAt: utc('expires_at').notNull(),
+});
+
+export const runtimePresence = pgTable('runtime_presence', {
+  deviceId: uuid('device_id')
+    .primaryKey()
+    .references(() => devices.id),
+  ownerId: uuid('owner_id')
+    .notNull()
+    .references(() => users.id),
+  sessionId: uuid('session_id')
+    .notNull()
+    .references(() => sessions.id),
+  instanceId: uuid('instance_id').notNull(),
+  report: jsonb('report').notNull(),
+  state: text('state').notNull(),
+  revision: integer('revision').notNull().default(1),
+  lastSeen: utc('last_seen').notNull(),
   expiresAt: utc('expires_at').notNull(),
 });

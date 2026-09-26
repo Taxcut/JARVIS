@@ -2,11 +2,11 @@
 
 ## Current scope
 
-Phase 2 runs locally with single-owner passkeys, trusted devices, native secure storage and realtime security state. It is not ready for public hosting. No computer execution or paid provider integrations are enabled. Owner-reported existing accounts do not establish integration readiness.
+Phase 3 runs locally with single-owner passkeys, trusted devices, native secure storage, realtime security state and an independent user-session runtime. It is not ready for public hosting. No computer execution or paid provider integrations are enabled. Owner-reported existing accounts do not establish integration readiness.
 
 ## Prerequisites
 
-Mac: Node 24, pnpm 12.4.2, stable Rust with rustfmt/clippy, Xcode Command Line Tools and running Docker Desktop. Apple Silicon and Intel use their native Rust target. Install missing tools from their official providers. The app requests no microphone, capture or Accessibility permission in this phase.
+Mac: macOS 13 or later, Node 24, pnpm 12.4.2, stable Rust with rustfmt/clippy, Xcode Command Line Tools and running Docker Desktop. Apple Silicon and Intel use their native Rust target. Install missing tools from their official providers. The app requests no microphone, capture or Accessibility permission in this phase.
 
 Windows: Node 24, pnpm 12.4.2, stable Rust MSVC toolchain, Visual Studio Build Tools with Desktop development with C++, WebView2 runtime and Docker Desktop using Linux containers. Use PowerShell in the repository root. GitHub Actions compiles on Windows; real Gaming PC interactive validation is still separate.
 
@@ -50,13 +50,13 @@ cargo build --workspace --locked
 pnpm --filter @jarvis/desktop tauri build --no-bundle
 ```
 
-`pnpm --filter @jarvis/core start` runs the compiled Core after `pnpm build`. For a local macOS app bundle, use `pnpm --filter @jarvis/desktop tauri build --debug --bundles app`. This is a development bundle, not a signed/notarized installer.
+`pnpm --filter @jarvis/core start` runs the compiled Core after `pnpm build`. For a local macOS app bundle, first run `pnpm runtime:prepare`, then `pnpm --filter @jarvis/desktop tauri build --debug --bundles app`. This is a development bundle, not a signed/notarized installer.
 
-Build the desktop frontend before direct Cargo builds from a fresh checkout. `pnpm build` includes it. `pnpm test` is deterministic unit/contract/API validation; `pnpm test:integration` starts and cleans up an isolated real PostgreSQL container. Docker must be running. No tests reset your development database.
+Build the desktop frontend and run `pnpm runtime:prepare` before direct Cargo builds from a fresh checkout. `pnpm build` includes it. `pnpm test` is deterministic unit/contract/API validation; `pnpm test:integration` starts and cleans up an isolated real PostgreSQL container. Docker must be running. No tests reset your development database.
 
 Default CI validates TypeScript and real PostgreSQL on Linux and Rust/native compilation on macOS and Windows. The manual package workflow compiles unsigned release executables without installers. Signing, notarization, signed installers and automatic updates are not implemented.
 
-Stop development processes with Ctrl+C. `pnpm db:down` stops PostgreSQL without deleting data. No background runtime/service is installed.
+Stop development processes with Ctrl+C. `pnpm db:down` stops PostgreSQL without deleting data. The dashboard does not automatically enable login startup. If you explicitly enabled it, disable it in Settings before removing the app.
 
 ## Troubleshooting and recovery
 
@@ -112,3 +112,28 @@ Physical verification: macOS Keychain has a real isolated roundtrip test (`cargo
 The owner subsequently resumed and completed real Mac Keychain/restart/sign-in/UI/recovery-setup checks on 2026-09-20/21. One Keychain approval sufficed for relaunching the same native build. If macOS asks again after a changed development build, approve only the expected JARVIS item using the login Keychain password (usually the Mac login password); never send that password to chat or replace native storage with plaintext. A changed Keychain password may differ from the current login password.
 
 Save all eight recovery codes privately before selecting **I have saved these codes · Hide**. Hidden codes cannot be retrieved. If a set was not saved, use **Replace recovery codes** with fresh passkey verification; all previous codes become invalid. The owner confirmed saving the current replacement set. Core persists only hashes, and recovery still needs a trusted device. Gaming PC physical testing remains intentionally deferred and does not block this Mac closure.
+
+## Phase 3 runtime installation and operations
+
+1. Preserve existing `.env`, database and native identity. Install dependencies, start PostgreSQL, apply migrations and start Core as above. Core and PostgreSQL are separate processes; runtime login startup does not install or start either one.
+2. Run `pnpm runtime:prepare` to compile/stage the target-specific helper, then `pnpm --filter @jarvis/desktop tauri build --debug --bundles app` on macOS. For a release bundle use `pnpm desktop:bundle`. Windows direct builds likewise require `pnpm runtime:prepare` before Cargo/Tauri; the unsigned-package workflow prepares the release helper automatically.
+3. On macOS place the complete app bundle in a stable user application location such as `~/Applications/JARVIS.app`. Keep its `Contents/MacOS/jarvis-runtime` and `Contents/Library/LaunchAgents/com.taxcut.jarvis.runtime.plist` together. Do not register a disposable target directory or modify a registered bundle while it is running. No administrator or root service is needed. Use a protected installation location on Windows with the helper beside the desktop executable.
+4. Open the native dashboard and sign in/resume the existing owner. In Settings or Diagnostics choose **Start runtime**, then **Connect runtime to Core** once. This creates a restricted session on the existing trusted device; it does not enroll another device. Approve only the expected `jarvis-runtime` Keychain request for the existing identity when macOS asks. Enter OS credentials only into the real OS dialog, never chat or JARVIS fields.
+5. Confirm ONLINE, a real last heartbeat and the same trusted device. Then choose **Enable start at login**. On macOS this registers the bundled SMAppService agent and launches it in the GUI user session. If APPROVAL REQUIRED appears, allow JARVIS under System Settings → General → Login Items & Extensions. On Windows the control writes a fixed quoted executable plus `--supervise` to this user's Run key. It takes effect at the next login; Start runtime launches it immediately.
+6. Closing or quitting the dashboard leaves the runtime active. Reopening discovers the current instance over protected IPC. **Reconnect runtime** discards the socket and revalidates/resyncs; it does not create credentials. **Stop runtime** ends the worker and supervisor cleanly, while leaving enrollment and the login registration intact. **Disable start at login** removes persistence. macOS unregistering also stops the managed job; Windows removes the next-login entry without stopping the current worker. Use Stop runtime separately when needed.
+
+The runtime credential expires under the existing 7-day idle/30-day absolute policy. AUTH REQUIRED means sign in to the dashboard if needed, then Connect runtime to Core; it will replace the old restricted session. A revoked device must be explicitly re-enrolled through the established owner flow. Never delete secure storage or edit trust rows to bypass this boundary. UPDATE REQUIRED means install matching runtime/Core versions. OFFLINE/DEGRADED requires checking Core/PostgreSQL, the loopback address and system clock; retries are bounded and jittered. Missing/denied secure storage requires OS access repair, not a plaintext fallback.
+
+Diagnostics shows public instance/version, startup state, heartbeat/reconnect/wake information and fixed error codes. Logs live in the platform local data directory under `com.taxcut.jarvis/runtime` (`~/Library/Application Support/com.taxcut.jarvis/runtime` on macOS), with `runtime.log` and three bounded rotations. These logs contain no request payloads or credentials. Do not distribute private `.env` or OS credential entries for troubleshooting. The runtime only discovers platform, architecture and its own lifecycle/version facts.
+
+For uninstall: disable login startup, stop runtime, quit the dashboard, then remove the installed app. Keep native identity and database unless you intentionally plan separate recovery/data removal. Moving or updating a registered bundle requires disable/stop, replace the complete bundle, then enable again. This phase provides local ad-hoc signing only, not a notarized distribution/update pipeline. Stage the new complete bundle separately and replace the old bundle as a unit after stopping it; do not overwrite its executable files in place. During final development validation, macOS rejected a launch from the earlier in-place replacement despite successful on-disk signature verification. Unregistering, quitting, installing a fresh complete bundle and registering again restored the supported launch. No OS security setting or credential was reset.
+
+## Deferred Gaming PC physical runtime checklist
+
+- Install the same verified build and keep the helper in its protected stable path; confirm exactly one supervisor/worker pair.
+- Enroll the PC explicitly, verify Windows Hello and Credential Manager, then provision only its runtime session.
+- Enable per-user login startup, sign out/in, verify the quoted Run path and no elevation; disable and verify removal.
+- Close/reopen the dashboard, terminate/restart the worker and restart Core; confirm unchanged trusted device identity and no duplicate runtime row.
+- Suspend/resume, lock/unlock and session transitions: stale sockets discarded, current auth checked, full resync and heartbeats resumed.
+- Verify revoked/expired credentials fail closed, lockdown remains visible, future capabilities unavailable and execution false.
+- Measure idle CPU/memory and inspect sanitized bounded logs on the physical PC. Hosted Windows tests do not substitute for these checks.

@@ -8,6 +8,12 @@
     "allow-native-resume",
     "allow-native-api",
     "allow-native-begin",
-    "allow-native-poll"
+    "allow-native-poll",
+    "allow-runtime-status",
+    "allow-runtime-start",
+    "allow-runtime-connect",
+    "allow-runtime-reconnect",
+    "allow-runtime-stop",
+    "allow-runtime-startup"
   ]
 }

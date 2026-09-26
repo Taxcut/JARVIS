@@ -18,10 +18,12 @@
     "db:up": "docker compose --env-file .env -f infra/docker/compose.yml up -d --wait",
     "db:down": "docker compose --env-file .env -f infra/docker/compose.yml down",
     "db:migrate": "pnpm --filter @jarvis/core db:migrate",
-    "desktop": "pnpm --filter @jarvis/desktop tauri dev",
-    "rust:check": "cargo fmt --all --check && cargo check --workspace && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
+    "desktop": "pnpm runtime:prepare && pnpm --filter @jarvis/desktop tauri dev",
+    "rust:check": "pnpm runtime:prepare && cargo fmt --all --check && cargo check --workspace && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "configure": "tsx infra/scripts/configure.ts"
+    "configure": "tsx infra/scripts/configure.ts",
+    "runtime:prepare": "node infra/scripts/prepare-runtime.mjs",
+    "desktop:bundle": "pnpm runtime:prepare --release && pnpm --filter @jarvis/desktop tauri build"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

@@ -1,3 +1,4 @@
+import { registerRuntime } from './runtime.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 import {
@@ -175,6 +176,7 @@ export async function registerIdentity(
       return { version: 1, ticket };
     }),
   );
+  await registerRuntime(app, identity);
   await registerRealtime(app, store);
   const cleanup = setInterval(() => {
     void store

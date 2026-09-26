@@ -13,3 +13,6 @@ coverage/
 *.pfx
 *.tsbuildinfo
 apps/desktop/src-tauri/gen/
+
+# Generated target-specific runtime sidecars
+apps/desktop/src-tauri/binaries/

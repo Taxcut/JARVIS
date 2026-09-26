@@ -35,6 +35,7 @@ export interface Owner extends QueryResultRow {
   revision: number;
 }
 export interface Session extends QueryResultRow {
+  kind: 'owner' | 'runtime';
   id: string;
   owner_id: string;
   device_id: string;
@@ -48,6 +49,8 @@ export interface Session extends QueryResultRow {
   revision: number;
 }
 export interface Device extends QueryResultRow {
+  platform: string;
+  architecture: string;
   id: string;
   owner_id: string;
   public_key: string;
@@ -198,11 +201,13 @@ export class IdentityStore {
     resourceId: string,
     revision = 1,
     risk = 'HIGH',
+    audited = true,
   ) {
-    await this.audit(q, type, ctx, 'succeeded', risk, {
-      resourceId,
-      resourceRevision: revision,
-    });
+    if (audited)
+      await this.audit(q, type, ctx, 'succeeded', risk, {
+        resourceId,
+        resourceRevision: revision,
+      });
     await q.query(
       `INSERT INTO sync_events(id,version,owner_id,type,resource_id,revision,correlation_id,payload) VALUES($1,1,$2,$3,$4,$5,$6,'{"changed":true}')`,
       [
@@ -235,15 +240,19 @@ export class IdentityStore {
       ],
     );
   }
-  async newSession(q: PoolClient, ctx: Context) {
+  async newSession(
+    q: PoolClient,
+    ctx: Context,
+    kind: 'owner' | 'runtime' = 'owner',
+  ) {
     const access = secret(),
       refresh = secret();
     const owner = await this.owner(q);
     if (!owner) return deny();
     const id = randomUUID();
     await q.query(
-      `INSERT INTO sessions(id,owner_id,device_id,access_hash,refresh_hash,security_revision,access_expires_at,idle_expires_at,expires_at)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      `INSERT INTO sessions(id,owner_id,device_id,access_hash,refresh_hash,security_revision,access_expires_at,idle_expires_at,expires_at,kind)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         id,
         ctx.ownerId,
@@ -254,6 +263,7 @@ export class IdentityStore {
         after(900),
         after(604800),
         after(2592000),
+        kind,
       ],
     );
     await this.emit(q, 'session.created', ctx, id);
@@ -309,7 +319,7 @@ export class IdentityStore {
     ).rows;
     const sessions = (
       await q.query(
-        `SELECT id,device_id AS "deviceId",revision,created_at AS "createdAt",last_used AS "lastUsed",expires_at AS "expiresAt",revoked_at AS "revokedAt" FROM sessions WHERE owner_id=$1 ORDER BY created_at DESC LIMIT 100`,
+        `SELECT id,kind,device_id AS "deviceId",revision,created_at AS "createdAt",last_used AS "lastUsed",expires_at AS "expiresAt",revoked_at AS "revokedAt" FROM sessions WHERE owner_id=$1 ORDER BY created_at DESC LIMIT 100`,
         [ctx.ownerId],
       )
     ).rows;
@@ -342,6 +352,21 @@ export class IdentityStore {
         [ctx.ownerId],
       )
     ).rows[0]!.seq;
+    const runtimePresence = (
+      await q.query(
+        `SELECT r.report || jsonb_build_object('deviceId',r.device_id,'revision',r.revision,'lastSeen',r.last_seen,'expiresAt',r.expires_at,
+       'state',CASE WHEN d.revoked_at IS NOT NULL OR d.trust_state='revoked' THEN 'REVOKED'
+         WHEN s.revoked_at IS NOT NULL OR s.expires_at<=now() OR s.idle_expires_at<=now() OR s.security_revision<>u.security_revision THEN 'AUTH_REQUIRED'
+         WHEN r.expires_at<=now() THEN 'OFFLINE' ELSE r.state END) AS value
+       FROM runtime_presence r JOIN devices d ON d.id=r.device_id JOIN sessions s ON s.id=r.session_id JOIN users u ON u.id=r.owner_id
+       WHERE r.owner_id=$1 ORDER BY r.device_id`,
+        [ctx.ownerId],
+      )
+    ).rows.map((row: { value: Record<string, unknown> }) => ({
+      ...row.value,
+      lastSeen: new Date(row.value.lastSeen as string).toISOString(),
+      expiresAt: new Date(row.value.expiresAt as string).toISOString(),
+    }));
     // Explicit safe projections above; JSON conversion only normalizes timestamps.
     return snapshotSchema.parse(
       JSON.parse(
@@ -355,6 +380,7 @@ export class IdentityStore {
           enrollments,
           approvals,
           audit,
+          runtimePresence,
           recoveryCodesRemaining: Number(remaining),
         }),
       ),
@@ -364,6 +390,24 @@ export class IdentityStore {
     await this.tx(async (q) => {
       const owner = await this.owner(q);
       if (owner) {
+        const expired = await q.query<{ device_id: string; revision: number }>(
+          "UPDATE runtime_presence SET state='OFFLINE',revision=revision+1 WHERE expires_at<=now() AND state NOT IN ('OFFLINE','AUTH_REQUIRED','REVOKED','ERROR','UPDATE_REQUIRED') RETURNING device_id,revision",
+        );
+        for (const row of expired.rows)
+          await this.emit(
+            q,
+            'runtime.expired',
+            {
+              ownerId: owner.id,
+              deviceId: row.device_id,
+              sessionId: randomUUID(),
+              correlationId: randomUUID(),
+              requestId: randomUUID(),
+            },
+            row.device_id,
+            row.revision,
+            'LOW',
+          );
         const ctx = {
           ownerId: owner.id,
           deviceId: undefined,

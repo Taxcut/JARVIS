@@ -1,3 +1,4 @@
+import { RuntimePanel } from './RuntimePanel.js';
 import { useIdentity } from './use-identity.js';
 import { IdentityViews, IdentityEntry } from './IdentityViews.js';
 import { api } from './identity-client.js';
@@ -161,7 +162,7 @@ export function App() {
         </nav>
         <div className="sidebar-foot">
           <span className="small-dot" /> FOUNDATION
-          <small>Phase 02 · v0.2.0</small>
+          <small>Phase 03 · v0.3.0</small>
         </div>
       </aside>
       <main>
@@ -326,7 +327,23 @@ export function App() {
               )}
             </>
           ) : ['Owner', 'Security', 'Devices', 'Approvals'].includes(page) ? (
-            <IdentityViews key={page} page={page} identity={identity} />
+            <>
+              <IdentityViews key={page} page={page} identity={identity} />
+              {page === 'Devices' && (
+                <RuntimePanel
+                  base={base}
+                  authenticated={identity.authenticated}
+                  snapshot={identity.snapshot}
+                />
+              )}
+            </>
+          ) : page === 'Settings' || page === 'Diagnostics' ? (
+            <RuntimePanel
+              base={base}
+              authenticated={identity.authenticated}
+              snapshot={identity.snapshot}
+              diagnostics={page === 'Diagnostics'}
+            />
           ) : page === 'Core' ? (
             <>
               <section className="hero panel">
@@ -420,20 +437,9 @@ export function App() {
               <div className="eyebrow">{page.toUpperCase()} / FOUNDATION</div>
               <h2>{empty[page][0]}</h2>
               <p>{empty[page][1]}</p>
-              {(page === 'Diagnostics' ||
-                page === 'Security' ||
-                page === 'Devices') && (
+              {(page === 'Security' || page === 'Devices') && (
                 <button className="secondary" onClick={() => setSetup(true)}>
                   View setup
-                </button>
-              )}
-              {page === 'Diagnostics' && token && (
-                <button
-                  className="secondary"
-                  disabled={busy}
-                  onClick={() => void connect()}
-                >
-                  Check connection
                 </button>
               )}
               <div role="status">

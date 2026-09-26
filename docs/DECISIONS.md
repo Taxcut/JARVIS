@@ -76,3 +76,29 @@ Authenticated Owner/Security/Devices/Approvals and real Core disconnect/reconnec
 Physical shutdown exposed a deadlock between reverse-ordered onClose hooks: main ended the PostgreSQL pool before realtime could return its LISTEN connection. Realtime now closes peers/timers/listener in preClose, and a connection acquired after shutdown begins is immediately returned. A real PostgreSQL/live-WebSocket regression uses production's pool-ownership order, failed before the fix and passes after it. A second physical Core restart confirmed clean exit and native automatic reconnection. Authentication, durable replay, grants and native Keychain behavior are unchanged. Fresh hosted validation is required for this focused code fix.
 
 Closure evidence: [Validate](https://github.com/Taxcut/JARVIS/actions/runs/35567260762) passed Linux TypeScript/database and both macOS/Windows native jobs on `1d2857eef87a12e56e97b9e4168807115de50231`. Together with the real Mac acceptance above and passing local gates, this completes the owner's current Phase 2 macOS acceptance scope. Windows physical testing stays intentionally deferred. Record this in a documentation-only commit with duplicate CI skipped, mark PR #1 ready for owner review, and leave it unmerged. No Prompt #3 work begins.
+
+## 2026-09-21: Phase 3 user-session runtime
+
+Implement an independent Rust helper plus bounded crash supervisor, with OS file locks and typed local IPC. Use SMAppService bundled Aqua LaunchAgent on macOS 13+, and a quoted fixed per-user Run entry on Windows. Registration is explicit; no root/admin daemon. The dashboard never owns the runtime lifetime.
+
+Reuse the existing device key but isolate runtime refresh rotation in a separate OS credential entry. Owner-authenticated native setup provisions an existing-system session marked `runtime`; Core restricts it to snapshot/sync/refresh/presence. React cannot receive this session or invoke its provisioning route through the generic native bridge. Missing/revoked identity fails closed.
+
+Runtime presence is a leased current row per device, separate from trust/enrollment. Only lifecycle transitions append audit evidence; heartbeat sync uses the existing bounded retention stream. Protocol mismatch is explicit and execution stays false. Physical Mac acceptance and fresh three-platform CI must precede a completion claim; Gaming PC physical acceptance is intentionally deferred.
+
+## 2026-09-26: Runtime physical validation and IPC review
+
+The runtime persisted through the usage-limit pause and real OS sleep/session transitions. Restore Core rather than reset credentials; automatic bounded reconnect resumed the existing runtime session and trusted device. Dashboard quit/reopen and a duplicate supervisor launch preserved a single worker. SMAppService startup/disable and supervised crash recovery were physically exercised from the installed user app.
+
+A valid bundled SMAppService returned NotFound before first registration; treating that as unavailable disabled the setup action incorrectly. Report NOT_CONFIGURED for this state while retaining UNAVAILABLE for missing bundle resources. Registration then succeeded through the supported API. No legacy startup fallback was needed. Preserve sanitized OS error domain/code for actionable registration failures.
+
+Security review adds Windows named-pipe server SID verification before credential transfer, alongside the owner DACL/remote-client rejection, and macOS fixed-helper ancestor path checks. Same-OS-user compromise remains outside the threat boundary; no app-enclave claim is made. Keep manual packaging aware of the new sidecar prerequisite. Fresh hosted CI must validate these refinements before marking PR #2 ready; no merge or Prompt #4 is authorized.
+
+During final review, strengthen the report CHECK with an explicit key-existence/JSON-boolean condition: PostgreSQL CHECK otherwise accepts a NULL result for a missing key. Use a new numbered migration, preserving the migration already applied to the real owner database. Native builds consistently target macOS 13 to match SMAppService availability.
+
+## 2026-09-26: Close Prompt #3 for the current Mac scope
+
+[Final Validate](https://github.com/Taxcut/JARVIS/actions/runs/36268611479) passed Linux TypeScript/PostgreSQL and macOS/Windows native checks, tests and builds on `7d739d5e70b35dcf7092560f6f56704033999c03`. The preceding Windows Clippy failure was fixed by placing its test module after production items; no behavior changed. Local quality gates and real Mac lifecycle/startup acceptance also passed. Record closure in documentation only, skip duplicate CI, mark PR #2 ready and leave it unmerged for the owner. No Prompt #4 functionality or execution authority is introduced.
+
+The final installed app uses a fresh complete bundle replacement: the earlier in-place update was rejected by macOS launch constraints despite passing on-disk signature verification. Unregister, quit, replace the stopped bundle and register again restored authenticated startup through SMAppService; no OS security or secure-storage bypass was used. The runtime remains ONLINE with startup ENABLED and the same trusted device. Dashboard quit/reopen again preserved its instance. Keep this distinction in setup/security guidance rather than claiming signature verification alone proves launchability.
+
+Windows physical acceptance remains intentionally deferred, with a Gaming PC checklist. Full Mac reboot/login was not forced; actual supported startup registration/launch/unregister/re-registration and naturally occurring sleep/wake were verified. Core/PostgreSQL supervision, production signing/notarization and delivery remain later work. Node 20 action deprecation warnings are non-blocking future maintenance. The owner has no remaining interactive action for this Mac closure; PR review/merge is a separate decision.

@@ -28,9 +28,9 @@ pub struct NativeClient {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeStatus {
-    device: DevicePublic,
+    pub device: DevicePublic,
     fingerprint: String,
-    resumable: bool,
+    pub resumable: bool,
 }
 fn now() -> u64 {
     SystemTime::now()
@@ -61,8 +61,17 @@ fn field(v: &Value, name: &str) -> Result<String, String> {
 }
 impl NativeClient {
     pub fn load() -> Result<Self, String> {
+        Self::with_identity(Identity::load(Box::new(NativeStore))?)
+    }
+    pub fn load_runtime() -> Result<Self, String> {
+        Self::with_identity(Identity::load_runtime(
+            Box::new(NativeStore),
+            Box::new(crate::RuntimeSessionStore),
+        )?)
+    }
+    fn with_identity(identity: Identity) -> Result<Self, String> {
         Ok(Self {
-            identity: Identity::load(Box::new(NativeStore))?,
+            identity,
             http: Client::builder()
                 .redirect(reqwest::redirect::Policy::none())
                 .timeout(Duration::from_secs(10))
@@ -80,14 +89,24 @@ impl NativeClient {
         }
     }
     async fn response(r: reqwest::RequestBuilder) -> Result<Value, String> {
-        let r = r.send().await.map_err(|_| "Core is unavailable")?;
-        if !r.status().is_success() {
-            let code = r
-                .json::<Value>()
-                .await
-                .ok()
-                .and_then(|v| v.get("error")?.get("code")?.as_str().map(String::from));
-            return Err(match code.as_deref() {
+        let mut r = r.send().await.map_err(|_| "Core is unavailable")?;
+        let status = r.status();
+        if r.content_length().unwrap_or(0) > 2 * 1024 * 1024 {
+            return Err("Core response too large".into());
+        }
+        let mut bytes = Vec::new();
+        while let Some(chunk) = r.chunk().await.map_err(|_| "Core is unavailable")? {
+            if bytes.len() + chunk.len() > 2 * 1024 * 1024 {
+                return Err("Core response too large".into());
+            }
+            bytes.extend_from_slice(&chunk);
+        }
+        if status.is_server_error() {
+            return Err("Core is unavailable".into());
+        }
+        let value: Value = serde_json::from_slice(&bytes).map_err(|_| "Invalid Core response")?;
+        if !status.is_success() {
+            return Err(match value["error"]["code"].as_str() {
                 Some("STEP_UP_REQUIRED") => "Fresh passkey verification required",
                 Some("REVISION_CONFLICT") => {
                     "This record changed. Review the latest state and try again."
@@ -97,15 +116,15 @@ impl NativeClient {
                     "Add another passkey before removing the last one"
                 }
                 Some("RATE_LIMITED") => "Please wait before trying again",
+                Some("RUNTIME_UPDATE_REQUIRED") => "Runtime update required",
+                Some("DEVICE_REVOKED") => "Device revoked",
                 _ => "Authentication or request rejected",
             }
             .into());
         }
-        if r.content_length().unwrap_or(0) > 2 * 1024 * 1024 {
-            return Err("Core response too large".into());
-        }
-        r.json().await.map_err(|_| "Invalid Core response".into())
+        Ok(value)
     }
+
     async fn signed(
         &self,
         core: &str,
@@ -218,8 +237,53 @@ impl NativeClient {
         ) {
             return Err("Native API route is not permitted".into());
         }
+        self.allowed_call(&core, method, path, body).await
+    }
+    // Native callers only. These routes are deliberately absent from the React bridge allowlist.
+    pub async fn issue_runtime_session(&mut self, core: &str) -> Result<Value, String> {
+        self.allowed_call(&base(core)?, "POST", "/api/v1/runtime/session", json!({}))
+            .await
+    }
+    pub fn adopt_runtime_session(&mut self, core: &str, session: &Value) -> Result<(), String> {
+        if !self.identity.runtime {
+            return Err("Runtime-only operation".into());
+        }
+        self.accept(&base(core)?, session)
+    }
+    pub fn saved_core(&self) -> Option<String> {
+        self.identity.saved.resume.as_ref().map(|r| r.base.clone())
+    }
+    pub async fn runtime_api(
+        &mut self,
+        core: &str,
+        method: &str,
+        path: &str,
+        body: Value,
+    ) -> Result<Value, String> {
+        if !self.identity.runtime
+            || !matches!(
+                (method, path),
+                ("GET", "/api/v1/runtime/compatibility")
+                    | ("GET", "/api/v1/identity/snapshot")
+                    | ("POST", "/api/v1/sync/ticket")
+                    | ("POST", "/api/v1/runtime/register")
+                    | ("POST", "/api/v1/runtime/heartbeat")
+                    | ("POST", "/api/v1/runtime/stop")
+            )
+        {
+            return Err("Runtime route not permitted".into());
+        }
+        self.allowed_call(&base(core)?, method, path, body).await
+    }
+    async fn allowed_call(
+        &mut self,
+        core: &str,
+        method: &str,
+        path: &str,
+        body: Value,
+    ) -> Result<Value, String> {
         if self.access.as_ref().is_none_or(|a| a.expires <= now()) {
-            self.resume(&core).await?;
+            self.resume(core).await?;
         }
         if self
             .identity
@@ -236,7 +300,7 @@ impl NativeClient {
         } else {
             serde_json::to_string(&body).map_err(|_| "Invalid request")?
         };
-        self.signed(&core, method, path, &raw, a.session, &a.token)
+        self.signed(core, method, path, &raw, a.session, &a.token)
             .await
     }
     pub async fn begin(

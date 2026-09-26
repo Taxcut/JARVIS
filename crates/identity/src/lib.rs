@@ -11,6 +11,34 @@ pub trait SecureStore: Send + Sync {
     fn write(&self, secret: &[u8]) -> Result<(), String>;
 }
 pub struct NativeStore;
+pub struct RuntimeSessionStore;
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+impl SecureStore for RuntimeSessionStore {
+    fn read(&self) -> Result<Option<Vec<u8>>, String> {
+        match keyring::Entry::new("com.taxcut.jarvis.runtime.v1", "session")
+            .map_err(|_| "Runtime secure storage unavailable")?
+            .get_secret()
+        {
+            Ok(v) => Ok(Some(v)),
+            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(_) => Err("Runtime secure storage could not be read".into()),
+        }
+    }
+    fn write(&self, value: &[u8]) -> Result<(), String> {
+        keyring::Entry::new("com.taxcut.jarvis.runtime.v1", "session")
+            .and_then(|e| e.set_secret(value))
+            .map_err(|_| "Runtime secure storage could not be saved".into())
+    }
+}
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+impl SecureStore for RuntimeSessionStore {
+    fn read(&self) -> Result<Option<Vec<u8>>, String> {
+        Err("Unsupported secure storage".into())
+    }
+    fn write(&self, _: &[u8]) -> Result<(), String> {
+        Err("Unsupported secure storage".into())
+    }
+}
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 impl SecureStore for NativeStore {
     fn read(&self) -> Result<Option<Vec<u8>>, String> {
@@ -64,6 +92,7 @@ pub struct DevicePublic {
 pub struct Identity {
     saved: SavedIdentity,
     store: Box<dyn SecureStore>,
+    runtime: bool,
 }
 impl Identity {
     pub fn load(store: Box<dyn SecureStore>) -> Result<Self, String> {
@@ -88,11 +117,59 @@ impl Identity {
                 }
             }
         };
-        let value = Self { saved, store };
+        let value = Self {
+            saved,
+            store,
+            runtime: false,
+        };
         value.persist()?;
         Ok(value)
     }
+    pub fn load_runtime(
+        identity_store: Box<dyn SecureStore>,
+        resume_store: Box<dyn SecureStore>,
+    ) -> Result<Self, String> {
+        let bytes = Zeroizing::new(
+            identity_store
+                .read()?
+                .ok_or("Native identity not configured")?,
+        );
+        let mut saved: SavedIdentity =
+            serde_json::from_slice(&bytes).map_err(|_| "Secure identity is corrupt")?;
+        if saved.version != 1 || saved.id.is_nil() {
+            return Err("Unsupported secure identity".into());
+        }
+        saved.resume = match resume_store.read()? {
+            Some(bytes) => {
+                let bytes = Zeroizing::new(bytes);
+                let (device, resume): (Uuid, Resume) =
+                    serde_json::from_slice(&bytes).map_err(|_| "Runtime session is corrupt")?;
+                if device != saved.id {
+                    return Err("Runtime device binding mismatch".into());
+                }
+                Some(resume)
+            }
+            None => None,
+        };
+        Ok(Self {
+            saved,
+            store: resume_store,
+            runtime: true,
+        })
+    }
     fn persist(&self) -> Result<(), String> {
+        if self.runtime {
+            let resume = self
+                .saved
+                .resume
+                .as_ref()
+                .ok_or("Runtime session not configured")?;
+            let bytes = Zeroizing::new(
+                serde_json::to_vec(&(self.saved.id, resume))
+                    .map_err(|_| "Runtime session encoding failed")?,
+            );
+            return self.store.write(&bytes);
+        }
         let bytes = Zeroizing::new(
             serde_json::to_vec(&self.saved).map_err(|_| "Secure identity could not be encoded")?,
         );
@@ -216,6 +293,52 @@ mod tests {
             .contains("refresh"));
         *store.0.lock().unwrap() = Some(b"corrupt".to_vec());
         assert!(Identity::load(Box::new(store)).is_err());
+    }
+    #[test]
+    fn runtime_reuses_identity_but_never_overwrites_dashboard_resume() {
+        let owner = Mock::default();
+        let mut gui = Identity::load(Box::new(owner.clone())).unwrap();
+        gui.save_resume(Resume {
+            session_id: Uuid::new_v4(),
+            refresh: "owner-test-only".into(),
+            base: "http://127.0.0.1:4310".into(),
+        })
+        .unwrap();
+        let before = owner.0.lock().unwrap().clone();
+        let runtime_store = Mock::default();
+        let mut runtime =
+            Identity::load_runtime(Box::new(owner.clone()), Box::new(runtime_store.clone()))
+                .unwrap();
+        assert_eq!(runtime.public().id, gui.public().id);
+        assert_eq!(runtime.fingerprint(), gui.fingerprint());
+        assert!(runtime.saved.resume.is_none());
+        runtime
+            .save_resume(Resume {
+                session_id: Uuid::new_v4(),
+                refresh: "runtime-test-only".into(),
+                base: "http://127.0.0.1:4310".into(),
+            })
+            .unwrap();
+        assert_eq!(*owner.0.lock().unwrap(), before);
+        let reloaded =
+            Identity::load_runtime(Box::new(owner.clone()), Box::new(runtime_store.clone()))
+                .unwrap();
+        assert_eq!(
+            reloaded.saved.resume.as_ref().unwrap().refresh,
+            "runtime-test-only"
+        );
+        assert!(
+            !String::from_utf8(runtime_store.0.lock().unwrap().clone().unwrap())
+                .unwrap()
+                .contains("key")
+        );
+        assert!(
+            Identity::load_runtime(Box::new(Mock::default()), Box::new(runtime_store.clone()))
+                .is_err()
+        );
+        let other = Mock::default();
+        Identity::load(Box::new(other.clone())).unwrap();
+        assert!(Identity::load_runtime(Box::new(other), Box::new(runtime_store)).is_err());
     }
     #[test]
     fn signing_is_compatible_and_binds_body() {

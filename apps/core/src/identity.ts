@@ -66,6 +66,31 @@ export class IdentityService {
         requestId: randomUUID(),
       };
       try {
+        // A revoked device may learn only its own revocation after proving its key
+        // and bound session credential. Unverified callers receive the generic denial.
+        const revoked = (
+          await q.query<{
+            public_key: string;
+            access_hash: string;
+            refresh_hash: string;
+          }>(
+            `SELECT d.public_key,s.access_hash,s.refresh_hash FROM devices d JOIN sessions s ON s.device_id=d.id
+           WHERE d.id=$1 AND s.id=$2 AND d.owner_id=$3 AND (d.revoked_at IS NOT NULL OR d.trust_state='revoked')`,
+            [ctx.deviceId, ctx.sessionId, ctx.ownerId],
+          )
+        ).rows[0];
+        if (
+          revoked &&
+          Math.abs(Date.now() - Number(headers.timestamp)) <= 60000 &&
+          digest((bearer ?? '').replace(/^Bearer /, '')) ===
+            (refresh ? revoked.refresh_hash : revoked.access_hash) &&
+          verifySignature(
+            revoked.public_key,
+            canonicalRequest({ ...headers, method, path, body }),
+            headers.signature,
+          )
+        )
+          deny('DEVICE_REVOKED');
         const { session, device } = await this.store.current(q, ctx, !refresh);
         const hash = digest((bearer ?? '').replace(/^Bearer /, ''));
         if (hash !== (refresh ? session.refresh_hash : session.access_hash))
@@ -80,6 +105,19 @@ export class IdentityService {
           )
         )
           deny('INVALID_SIGNATURE');
+        if (
+          session.kind === 'runtime' &&
+          !new Set([
+            'GET /api/v1/identity/snapshot',
+            'GET /api/v1/runtime/compatibility',
+            'POST /api/v1/session/refresh',
+            'POST /api/v1/sync/ticket',
+            'POST /api/v1/runtime/register',
+            'POST /api/v1/runtime/heartbeat',
+            'POST /api/v1/runtime/stop',
+          ]).has(`${method} ${path}`)
+        )
+          deny('RUNTIME_SCOPE_REQUIRED', 403);
         const inserted = await q.query(
           `INSERT INTO replay_nonces(session_id,nonce_hash,expires_at) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING session_id`,
           [session.id, digest(headers.nonce), after(125)],

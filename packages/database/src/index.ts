@@ -36,7 +36,7 @@ export function createDatabase(url: string) {
     async ready() {
       await db.execute(sql`select 1`);
       const rows = await db.select().from(schema.schemaMetadata);
-      if (rows.length !== 1 || rows[0]?.version !== 3)
+      if (rows.length !== 1 || rows[0]?.version !== 5)
         throw new Error('Schema not current');
     },
     async setup(): Promise<SetupStatus> {

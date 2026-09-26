@@ -1,6 +1,6 @@
 # Architecture
 
-JARVIS is a single-owner local desktop and modular Node/Fastify Core. PostgreSQL is the sole authoritative database. Phase 2 adds identity/security/realtime to the Phase 1 pnpm/Tauri/React foundation without an execution runtime or external identity service.
+JARVIS is a single-owner local desktop and modular Node/Fastify Core. PostgreSQL is the sole authoritative database. Phase 3 adds an independent Rust user-session runtime to the existing identity/security/realtime foundation. There is no computer executor or external identity service.
 
 ## Process boundaries
 
@@ -8,7 +8,9 @@ JARVIS is a single-owner local desktop and modular Node/Fastify Core. PostgreSQL
 React UI → narrow Tauri identity commands → Rust native client
   → signed loopback Core API → identity/security transactions → PostgreSQL
 Rust → system browser → WebAuthn user verification → Core
-PostgreSQL committed sync events + NOTIFY → Core WebSocket → React projection
+PostgreSQL committed sync events + NOTIFY → Core WebSocket → React/runtime projections
+Tauri runtime controls → protected local IPC → independent Rust runtime
+Runtime → its own restricted signed Core session → leased presence
 Future model request → capability/policy → owner decision
   → separate future execution authorization → independent native runtime
 ```
@@ -21,7 +23,7 @@ React receives public identity, safe authoritative snapshots and one-time sync t
 - `packages/security`: fail-closed policy; the separate Node signing export defines canonicalization and verification without shipping Node crypto into the browser.
 - `packages/database`: typed Drizzle schema, migration readiness and foundation setup persistence.
 - `apps/core`: identity store, WebAuthn service, signed transport, mutation service and realtime delivery. Security queries use parameterized PostgreSQL transactions and explicit safe projections alongside Drizzle's typed schema/migrations.
-- `crates/identity`: platform secure-store abstraction, signing, session rotation and system-browser adapter. `crates/runtime` still reports execution unavailable.
+- `crates/identity`: platform secure-store abstraction, signing, session rotation and system-browser adapter. `crates/runtime` owns supervised background lifecycle, OS notifications, typed local IPC, scoped Core connectivity and presence; execution remains unavailable.
 - `apps/desktop`: existing visual shell, real Owner/Security/Devices/Approvals screens and in-memory authoritative projections. No independent persistent client database.
 
 ## Transaction and synchronization model
@@ -40,4 +42,4 @@ A single bounded minute maintenance task expires security records, clears challe
 - Browser automation, LiveKit/Twilio phone/SMS, semantic memory/pgvector, missions and automations remain separate later work.
 - AURA remains a distinct product with an explicit delegated Control API and no inherited JARVIS authority.
 
-Closing the desktop does not stop separately started Core, but no always-on native service is installed. JARVIS defaults to addressing the owner as Sir. Overall product setup remains false: identity completion does not imply voice/phone/remote/deployment readiness. Fresh installs seed no operational records.
+Closing the desktop stops neither the independent runtime nor separately started Core. Explicit login startup registers only the user-session native runtime; Core/PostgreSQL lifecycle and future deployment remain separate. See RUNTIME for supervision, platform choices and failure boundaries. JARVIS defaults to addressing the owner as Sir. Overall product setup remains false: identity completion does not imply voice/phone/remote/deployment readiness. Fresh installs seed no operational records.
