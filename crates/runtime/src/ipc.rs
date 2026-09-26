@@ -126,6 +126,8 @@ pub async fn request(command: Command) -> Result<Reply, String> {
         let mut stream = tokio::net::windows::named_pipe::ClientOptions::new()
             .security_qos_flags(windows_sys::Win32::Storage::FileSystem::SECURITY_IDENTIFICATION)
             .open(crate::platform::windows::pipe_name()?)?;
+        #[cfg(windows)]
+        crate::platform::windows::verify_server(&stream)?;
         write(&mut stream, &command).await?;
         read(&mut stream).await
     }

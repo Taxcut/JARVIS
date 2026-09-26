@@ -1,6 +1,6 @@
 # Protocol v1
 
-Zod contracts in `packages/protocol` define versioned authentication, pairing, mutations, snapshots and realtime handshakes. Unsupported versions fail closed. Phase 2 extends the coordinated private desktop/Core contract; Phase 1 clients must upgrade alongside Core (system phase is now 2 and setup states have expanded). No public compatibility promise is made for an old private preview client.
+Zod contracts in `packages/protocol` define versioned authentication, pairing, mutations, snapshots and realtime handshakes. Unsupported versions fail closed. Phase 2 extends the coordinated private desktop/Core contract; Phase 1 clients must upgrade alongside Core (system phase is now 3 and setup states have expanded). No public compatibility promise is made for an old private preview client.
 
 ## HTTP surface
 
@@ -58,4 +58,16 @@ A snapshot/update includes `fromSequence`, ordered `events` and a current safe `
 
 Clients apply authoritative snapshots, ignore duplicate update batches, validate increasing event sequences/unique IDs and reject mismatched batch cursors. An unavailable retention window, future cursor or detected ordering fault causes a full snapshot. Fresh app starts begin at sequence zero. Socket heartbeat is 15 seconds; the UI declares stale after 40 seconds and reconnects with capped exponential backoff. CONNECTING/SYNCING/LIVE/DEGRADED/OFFLINE reflect actual transport state. No periodic product-state polling is used; only an explicitly initiated browser ceremony uses short bounded completion polling.
 
-The original heartbeat/ack schemas remain future runtime boundaries. Sync events and approval decisions are never commands. Breaking public API generations will require a new explicit envelope/path and reviewed compatibility fixtures.
+The original generic heartbeat/ack schemas are not runtime commands. Sync events and approval decisions are never commands. Breaking public API generations will require a new explicit envelope/path and reviewed compatibility fixtures.
+
+## Runtime protocol v1
+
+`packages/protocol/src/runtime.ts` is the strict presence/capability contract. Runtime protocol compatibility is separate from the application version. Signed `GET /api/v1/runtime/compatibility` returns current/minimum runtime protocol 1, heartbeat 30 seconds, lease 90 seconds and `executionAvailable:false`. Unsupported reports return 426 `RUNTIME_UPDATE_REQUIRED` before persistence.
+
+`POST /api/v1/runtime/session` accepts an empty object from an owner session and issues a restricted session for that same trusted device. Only native setup may consume its response; the React fixed-route bridge rejects this route. Runtime-scoped sessions cannot mutate owners/devices/approvals or start step-up/add ceremonies.
+
+Signed runtime-only `POST /api/v1/runtime/register`, `/heartbeat` and `/stop` accept the strict report: device-bound platform/architecture, runtime and protocol versions, instance UUID, build label, start timestamp, lifecycle/startup state, wake generation, capability states and false execution availability. Unknown keys, future available capabilities and platform substitution are rejected. Heartbeat/stop require the registered instance and session; stop requires STOPPING and projects OFFLINE. A runtime restart uses a new instance UUID with the same trusted device. A replacement session must also begin a new instance.
+
+Snapshots include `runtimePresence`, independently of device enrollment. Each row contains a server-issued revision, last-seen and expiry. Expired leases project OFFLINE immediately; revoked devices project REVOKED, invalid sessions AUTH_REQUIRED. One current row per device avoids heartbeat history growth. Changes share the existing bounded replay stream. The worker requests sequence zero after every reconnect/wake, validates the authoritative snapshot and subsequent ordered batches, then renews presence. Sync data is never executable instruction.
+
+The local IPC protocol is length-prefixed JSON, maximum 16 KiB, with a closed command set. Native startup/start controls choose fixed OS mechanisms and a bundled helper; callers cannot provide executable paths, process IDs or shell text. The dashboard polls local health only while its runtime panel is mounted; authoritative product state still uses Core WebSocket events.

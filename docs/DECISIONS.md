@@ -84,3 +84,13 @@ Implement an independent Rust helper plus bounded crash supervisor, with OS file
 Reuse the existing device key but isolate runtime refresh rotation in a separate OS credential entry. Owner-authenticated native setup provisions an existing-system session marked `runtime`; Core restricts it to snapshot/sync/refresh/presence. React cannot receive this session or invoke its provisioning route through the generic native bridge. Missing/revoked identity fails closed.
 
 Runtime presence is a leased current row per device, separate from trust/enrollment. Only lifecycle transitions append audit evidence; heartbeat sync uses the existing bounded retention stream. Protocol mismatch is explicit and execution stays false. Physical Mac acceptance and fresh three-platform CI must precede a completion claim; Gaming PC physical acceptance is intentionally deferred.
+
+## 2026-09-26: Runtime physical validation and IPC review
+
+The runtime persisted through the usage-limit pause and real OS sleep/session transitions. Restore Core rather than reset credentials; automatic bounded reconnect resumed the existing runtime session and trusted device. Dashboard quit/reopen and a duplicate supervisor launch preserved a single worker. SMAppService startup/disable and supervised crash recovery were physically exercised from the installed user app.
+
+A valid bundled SMAppService returned NotFound before first registration; treating that as unavailable disabled the setup action incorrectly. Report NOT_CONFIGURED for this state while retaining UNAVAILABLE for missing bundle resources. Registration then succeeded through the supported API. No legacy startup fallback was needed. Preserve sanitized OS error domain/code for actionable registration failures.
+
+Security review adds Windows named-pipe server SID verification before credential transfer, alongside the owner DACL/remote-client rejection, and macOS fixed-helper ancestor path checks. Same-OS-user compromise remains outside the threat boundary; no app-enclave claim is made. Keep manual packaging aware of the new sidecar prerequisite. Fresh hosted CI must validate these refinements before marking PR #2 ready; no merge or Prompt #4 is authorized.
+
+During final review, strengthen the report CHECK with an explicit key-existence/JSON-boolean condition: PostgreSQL CHECK otherwise accepts a NULL result for a missing key. Use a new numbered migration, preserving the migration already applied to the real owner database. Native builds consistently target macOS 13 to match SMAppService availability.

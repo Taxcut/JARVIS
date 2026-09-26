@@ -11,9 +11,12 @@ fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(Some(0)).collect()
 }
 pub fn sid() -> io::Result<String> {
+    process_sid(unsafe { GetCurrentProcess() })
+}
+fn process_sid(process: HANDLE) -> io::Result<String> {
     unsafe {
         let mut token = ptr::null_mut();
-        if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) == 0 {
+        if OpenProcessToken(process, TOKEN_QUERY, &mut token) == 0 {
             return Err(io::Error::last_os_error());
         }
         let mut size = 0;
@@ -86,6 +89,12 @@ pub fn pipe_name() -> io::Result<String> {
     Ok(format!(r"\\.\pipe\jarvis-runtime-v1-{}", sid()?))
 }
 pub fn pipe(first: bool) -> io::Result<tokio::net::windows::named_pipe::NamedPipeServer> {
+    pipe_at(&pipe_name()?, first)
+}
+fn pipe_at(
+    name: &str,
+    first: bool,
+) -> io::Result<tokio::net::windows::named_pipe::NamedPipeServer> {
     let descriptor = Descriptor::new(false)?;
     let mut attributes = SECURITY_ATTRIBUTES {
         nLength: std::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
@@ -100,9 +109,47 @@ pub fn pipe(first: bool) -> io::Result<tokio::net::windows::named_pipe::NamedPip
             .in_buffer_size(16384)
             .out_buffer_size(16384)
             .create_with_security_attributes_raw(
-                pipe_name()?,
+                name,
                 (&mut attributes as *mut SECURITY_ATTRIBUTES).cast(),
             )
+    }
+}
+pub fn verify_server(pipe: &tokio::net::windows::named_pipe::NamedPipeClient) -> io::Result<()> {
+    use std::os::windows::io::AsRawHandle;
+    let mut pid = 0;
+    unsafe {
+        if windows_sys::Win32::System::Pipes::GetNamedPipeServerProcessId(
+            pipe.as_raw_handle().cast(),
+            &mut pid,
+        ) == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+        if process.is_null() {
+            return Err(io::Error::last_os_error());
+        }
+        let owner = process_sid(process);
+        CloseHandle(process);
+        if owner? != sid()? {
+            return Err(io::Error::other("IPC server owner rejected"));
+        }
+    }
+    Ok(())
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[tokio::test]
+    async fn named_pipe_is_exclusive_and_checks_server_owner() {
+        let name = format!(r"\\.\pipe\jarvis-runtime-test-{}", uuid::Uuid::new_v4());
+        let server = pipe_at(&name, true).unwrap();
+        assert!(pipe_at(&name, true).is_err());
+        let client = tokio::net::windows::named_pipe::ClientOptions::new()
+            .open(&name)
+            .unwrap();
+        server.connect().await.unwrap();
+        verify_server(&client).unwrap();
     }
 }
 pub fn startup(enable: Option<bool>) -> Result<String, String> {
@@ -117,14 +164,26 @@ pub fn startup(enable: Option<bool>) -> Result<String, String> {
     unsafe {
         let mut key = ptr::null_mut();
         let access = KEY_QUERY_VALUE | if enable.is_some() { KEY_SET_VALUE } else { 0 };
-        if RegOpenKeyExW(
-            HKEY_CURRENT_USER,
-            wide(r"Software\Microsoft\Windows\CurrentVersion\Run").as_ptr(),
-            0,
-            access,
-            &mut key,
-        ) != ERROR_SUCCESS
-        {
+        let subkey = wide(r"Software\Microsoft\Windows\CurrentVersion\Run");
+        let opened = if enable == Some(true) {
+            RegCreateKeyExW(
+                HKEY_CURRENT_USER,
+                subkey.as_ptr(),
+                0,
+                ptr::null(),
+                REG_OPTION_NON_VOLATILE,
+                access,
+                ptr::null(),
+                &mut key,
+                ptr::null_mut(),
+            )
+        } else {
+            RegOpenKeyExW(HKEY_CURRENT_USER, subkey.as_ptr(), 0, access, &mut key)
+        };
+        if opened == ERROR_FILE_NOT_FOUND {
+            return Ok("DISABLED".into());
+        }
+        if opened != ERROR_SUCCESS {
             return Err("Windows login startup is unavailable".into());
         }
         let name = wide("JARVIS Runtime");

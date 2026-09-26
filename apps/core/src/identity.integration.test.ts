@@ -336,6 +336,16 @@ it('isolates runtime authority, stores bounded presence, rejects future capabili
     409,
   );
   expect((await call('/api/v1/runtime/register', report)).statusCode).toBe(200);
+  for (const invalid of [
+    {},
+    { executionAvailable: 'false' },
+    { executionAvailable: true },
+  ])
+    await expect(
+      db.pool.query('UPDATE runtime_presence SET report=$1', [
+        JSON.stringify(invalid),
+      ]),
+    ).rejects.toThrow();
   const auditCount = async () =>
     Number(
       (

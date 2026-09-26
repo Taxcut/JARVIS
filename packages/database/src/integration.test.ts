@@ -7,6 +7,7 @@ import {
   setupState,
   devices,
   users,
+  runtimePresence,
 } from './index.js';
 const url = process.env.JARVIS_TEST_DATABASE_URL;
 if (!url)
@@ -40,7 +41,13 @@ it('migrates idempotently, verifies connectivity and starts without product reco
     configured: false,
     core: 'not_configured',
   });
-  for (const table of [auditEvents, devices, users, setupState])
+  for (const table of [
+    auditEvents,
+    devices,
+    users,
+    setupState,
+    runtimePresence,
+  ])
     expect(await db.db.select().from(table)).toHaveLength(0);
 });
 it('stores audited setup atomically, enforces append-only behavior and UTC', async () => {

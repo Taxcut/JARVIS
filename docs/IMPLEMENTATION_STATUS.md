@@ -1,8 +1,14 @@
 # Implementation status
 
-## Phase 3 — IN PROGRESS
+## Phase 3 — final validation in progress
 
-Owner Prompt #3 authorizes the always-on user-session runtime on `feat/phase3-runtime`, based on `58f3ebabde0c25cca7e04b66ab32d40df6303b35`. Core presence, restricted runtime sessions, native process/IPC/startup scaffolding and dashboard controls are implemented and under validation. All 19 PostgreSQL integration tests and TypeScript checking pass. Native builds, hosted CI, expanded failure tests and physical Mac acceptance are still pending. This is not a closure claim; no Phase 3 merge is authorized. Prompt #4 has not started. Historical Phase 2 statements below describe that phase’s closure, before the new authorization.
+Owner Prompt #3 authorizes the always-on user-session runtime on `feat/phase3-runtime`, based on `58f3ebabde0c25cca7e04b66ab32d40df6303b35`. [PR #2](https://github.com/Taxcut/JARVIS/pull/2) remains unmerged. The runtime implements supervised per-user lifecycle, protected typed IPC, separate scoped sessions, leased presence, sleep/wake resync, explicit startup and real dashboard diagnostics. Execution is false and Prompt #4 has not started.
+
+[Initial hosted validation](https://github.com/Taxcut/JARVIS/actions/runs/35643731767) passed all three jobs on `88796f4`: Linux TypeScript/PostgreSQL, macOS native and Windows native. Local TypeScript gates (31 tests), 19 PostgreSQL integration tests, native checks and 15 Rust tests passed; the isolated credential-store test is intentionally not run automatically. Subsequent startup/security refinements need fresh hosted verification before closure.
+
+Physical evidence: owner-approved helper Keychain access, real separate session, same trusted Mac, dashboard quit/reopen retaining runtime identity, duplicate-instance exclusion, automatic Core recovery and naturally occurring sleep/wake/session recovery all passed. The process survived September 21–26. SMAppService registration launched a real launchd-owned job; clean disable removed it. A controlled worker crash recovered within approximately one second with the same device and no additional enrollment. RUNTIME records exact limits and a 30-second idle CPU/RSS spot sample. Full OS logout/reboot was not forced; Windows physical acceptance remains intentionally deferred.
+
+Historical Phase 2 statements below describe that phase’s closure before the new authorization. Final secrets review, refreshed CI, final installed-build check and documentation closure remain in progress.
 
 ## Phase 2 — COMPLETE for macOS; Windows physical acceptance intentionally deferred
 

@@ -21,6 +21,9 @@ pub fn startup(enable: Option<bool>) -> Result<String, String> {
         ))
     };
     if let Some(enable) = enable {
+        if enable {
+            super::helper_path()?;
+        }
         let result = unsafe {
             if enable {
                 service.registerAndReturnError()
@@ -28,15 +31,14 @@ pub fn startup(enable: Option<bool>) -> Result<String, String> {
                 service.unregisterAndReturnError()
             }
         };
-        result.map_err(|_| {
-            "macOS could not change runtime startup; review Login Items in System Settings"
-        })?;
+        result.map_err(|error| format!("macOS startup registration failed ({} / {}). Review Login Items in System Settings.", error.domain(), error.code()))?;
     }
     Ok(unsafe {
         match service.status() {
             SMAppServiceStatus::Enabled => "ENABLED",
             SMAppServiceStatus::RequiresApproval => "APPROVAL_REQUIRED",
             SMAppServiceStatus::NotRegistered => "DISABLED",
+            SMAppServiceStatus::NotFound => "NOT_CONFIGURED",
             _ => "UNAVAILABLE",
         }
     }

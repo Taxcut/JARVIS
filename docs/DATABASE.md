@@ -21,7 +21,7 @@ PostgreSQL 17 is authoritative. Local Compose publishes only `127.0.0.1:54329`. 
 | audit_events                                      | Append-oriented safe lifecycle records with risk, outcome and tracing IDs                                                                       |
 | setup_state                                       | Real Core verification progress, created only after a successful check                                                                          |
 | capabilities / device_capabilities / policy_rules | Preserved Phase 1 policy persistence boundaries; no execution exposed                                                                           |
-| schema_metadata / drizzle.__drizzle_migrations    | Compatibility version 3 and migration ledger                                                                                                    |
+| schema_metadata / drizzle.__drizzle_migrations    | Compatibility version 5 and migration ledger                                                                                                    |
 
 UUID entity IDs and `timestamptz` are used throughout. Connections set UTC; API timestamps are ISO 8601. JSON is limited to typed device candidates, transport metadata and safe event payloads; public projection queries explicitly exclude authentication material. No device private key columns exist. Passkey public keys and session/recovery hashes do not confer authentication by themselves.
 
@@ -40,3 +40,11 @@ A minute maintenance pass expires pending approvals/enrollments with audit+sync 
 `pnpm test:integration` creates a disposable PostgreSQL container with random credentials and a loopback ephemeral port. Identity tests create a second database inside that container; fixtures never enter the development volume. Tests exercise real WebAuthn cryptography, constraints, replay races, rotation, recovery and multiple sockets/Core restart. The runner never resets the development DATABASE_URL.
 
 `pnpm db:down` preserves the development volume. Never delete volumes as troubleshooting. Encrypted scheduled off-host backups, retention, restore rehearsals and recovery objectives remain mandatory future deployment work. Passkey recovery is not a database backup. Future conversations/memory/missions/phone/remote domains are not implemented or seeded.
+
+## Phase 3 migration and presence
+
+`0003_runtime.sql` advances readiness to schema version 4. It adds `sessions.kind` (`owner` by default, or `runtime`) without rewriting prior migrations, with one non-revoked runtime session per device. `runtime_presence` has one primary-keyed device row bound by foreign keys to owner/session/device. The report is safe JSON; lifecycle is constrained and execution is CHECK-constrained false. Presence revisions, UTC last-seen and 90-second lease expiry are server-generated.
+
+Registration, lease renewal and lifecycle events use the same advisory transaction lock and committed sync watermark. Stable heartbeats update current state and the existing 24-hour/approximately-10,000-event replay window. Only transitions/capability changes append runtime audit events. The maintenance pass marks an expired live row OFFLINE once and emits one expiry event; snapshot projection already treats expired leases as offline, even before maintenance. Revocation/expiry are checked independently of cleanup. New databases contain zero runtime rows; real owner state is never seeded by tests.
+
+`0004_runtime_report_constraint.sql` hardens the JSON constraint against SQL CHECK NULL semantics: the execution key must exist and equal the JSON boolean false, not a missing key or string. Readiness advances to version 5 without editing the already-applied migration. Integration tests verify all three invalid forms are rejected.

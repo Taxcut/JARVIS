@@ -40,9 +40,16 @@ pub fn helper_path() -> Result<std::path::PathBuf, String> {
     }
     #[cfg(unix)]
     {
-        use std::os::unix::fs::PermissionsExt;
-        if meta.permissions().mode() & 0o022 != 0 {
-            return Err("Runtime helper is writable by another user".into());
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        for ancestor in path.ancestors() {
+            let metadata =
+                std::fs::symlink_metadata(ancestor).map_err(|_| "Runtime path unavailable")?;
+            if metadata.file_type().is_symlink()
+                || metadata.permissions().mode() & 0o022 != 0
+                || (metadata.uid() != 0 && metadata.uid() != unsafe { libc::geteuid() })
+            {
+                return Err("Runtime path is not protected from other users".into());
+            }
         }
     }
     Ok(path)

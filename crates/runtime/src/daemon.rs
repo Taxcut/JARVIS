@@ -36,6 +36,9 @@ fn sync(status: &mut Status, value: &Value) -> Result<(), String> {
         .sync_sequence
         .parse::<u64>()
         .map_err(|_| "Invalid Core response")?;
+    if value["type"] == "update" && seq <= prev {
+        return Ok(());
+    }
     if snapshot["version"] != 1
         || seq < prev
         || (value["type"] == "update" && value["fromSequence"] != status.sync_sequence)

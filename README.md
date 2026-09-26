@@ -1,6 +1,6 @@
 # JARVIS
 
-A personal AI platform for macOS and Windows. **Development Phase 2: Identity and realtime synchronization.** This repository establishes a real local Core, PostgreSQL persistence, a desktop Command Center and typed security boundaries. It does not provide an AI assistant, tool execution, remote control, voice, phone service or an always-on runtime yet.
+A personal AI platform for macOS and Windows. **Development Phase 3: Independent user-session runtime.** This repository establishes a real local Core, PostgreSQL persistence, a desktop Command Center and typed security boundaries. It does not provide an AI assistant, tool execution, remote control, voice, phone service yet. The background runtime maintains identity, presence and connectivity; execution is unavailable.
 
 ## Start here
 
@@ -20,14 +20,14 @@ pnpm desktop
 
 ## Architecture and layout
 
-- `apps/desktop`: Tauri 2, React/TypeScript and Vite; narrow native identity commands only.
+- `apps/desktop`: Tauri 2, React/TypeScript and Vite; narrow native identity and runtime lifecycle commands.
 - `apps/core`: Node 24 / Fastify modular monolith, loopback API `/api/v1`.
 - `packages/config`, `schemas`, `protocol`: Zod environment, identity, message and API contracts.
 - `packages/security`: typed capability registry and fail-closed policy evaluation.
 - `packages/database`: PostgreSQL/Drizzle schema and transaction/persistence services.
 - `packages/api-client`: validated, authenticated local Core client.
 - `crates/identity`: native secure storage, device signing and passkey browser adapter.
-- `crates/runtime`: explicit inactive runtime boundary; no OS actions or service.
+- `crates/runtime`: supervised Rust user-session helper, secure local IPC, presence, sleep/wake recovery and explicit per-user login startup.
 - `infra/docker`, `infra/migrations`, `infra/scripts`: PostgreSQL and repeatable setup/testing.
 - `docs`: architectural decisions, security limitations and future integration boundaries.
 
@@ -45,3 +45,5 @@ cargo build --workspace --locked
 Integration tests create and remove their own PostgreSQL container. They never reset the development database. `pnpm db:down` retains its named volume. Never remove it unless you intend to discard local data.
 
 See [implementation status](docs/IMPLEMENTATION_STATUS.md), [architecture](docs/ARCHITECTURE.md), and [security](docs/SECURITY.md). Later work uses focused branches and PRs with green validation; initial bootstrap uses `main`. Unsigned native compilation is validated on macOS/Windows; installers, signing and updates are future work.
+
+See [RUNTIME](docs/RUNTIME.md) for process boundaries and [JARVISSETUP](docs/JARVISSETUP.md#phase-3-runtime-installation-and-operations) for building/installing the bundled helper. Enable login startup explicitly in Settings. Closing the dashboard does not stop the runtime; stop/reconnect/disable are separate controls. Windows physical acceptance remains on the documented Gaming PC checklist.
