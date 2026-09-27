@@ -106,7 +106,9 @@ After the first authenticated connection, initialize the standard user's PATH an
 & "$env:USERPROFILE\Developer\Initialize-JarvisEnvironment.ps1"
 ```
 
-This visible one-time helper changes only `jarvisdev`'s user PATH, confirms it is not elevated, prints tool versions, fetches origin and checks the Phase 3 ancestor. It does not perform elevation. Then exit and open a fresh session to verify the persisted environment. From the checkout, use the existing validation commands above. Mac authentication succeeded; fresh non-interactive PATH resolution, dependency installation and remote build/test execution must still be verified before remote development is accepted.
+This visible one-time helper changes only `jarvisdev`'s user PATH, confirms it is not elevated, prints tool versions, fetches origin and checks the Phase 3 ancestor. It does not perform elevation. A fresh non-interactive connection subsequently resolved Git, Node, pnpm, cargo and rustc to their intended locations. A standalone `whoami` command completed with exit 0 in 0.5 seconds. Dependency installation and remote build/test execution remain pending.
+
+The first non-interactive Git fetch hung inside Windows' SSH client. A Mac-side `ChannelTimeout=session=30s` reproduced the hang and closed the idle session. Removing `Env:c28fc6f98a2c44abbbd89d6a3037d0d9_POSIX_FD_STATE` from that one PowerShell process allowed the otherwise identical fetch to finish and report `main` up to date. This matches the inherited descriptor-state problem reported in <https://github.com/PowerShell/Win32-OpenSSH/issues/2037>. A per-user PowerShell profile correction has been prepared; its installation and verification in a new connection are still pending. It does not alter SSH authentication or Windows security protections. Commands that explicitly use `-NoProfile` must perform the same process-local cleanup before launching Windows' SSH client.
 
 To disable access immediately, run these commands locally in an owner-approved elevated PowerShell session:
 
