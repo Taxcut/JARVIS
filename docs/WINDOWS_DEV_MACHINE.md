@@ -4,7 +4,7 @@ Bootstrap dates: 2026-09-26–27. This machine extends the primary Mac workflow;
 
 ## Acceptance status
 
-**Not accepted yet.** The local TypeScript checks, database integration tests, runtime/identity Rust checks and physical runtime smoke test pass. Windows Smart App Control blocks unsigned Rust build helpers, preventing completion of the full native and Tauri builds. The private SSH service is running; Mac authentication and remote development checks are pending.
+**Not accepted yet.** The local TypeScript checks, database integration tests, runtime/identity Rust checks and physical runtime smoke test pass. Windows Smart App Control blocks unsigned Rust build helpers, preventing completion of the full native and Tauri builds. The private SSH service is running. The owner confirmed successful Mac key authentication on September 27, and an established connection from the expected Mac address was observed. Remote development checks are pending.
 
 Do not disable Smart App Control, Defender, the firewall or UAC to turn this result green. Native build acceptance needs a supported signing/trust solution compatible with the owner's security requirements. Microsoft documents that Smart App Control does not offer individual application exceptions: <https://support.microsoft.com/en-us/windows/security/threat-malware-protection/smart-app-control-frequently-asked-questions>.
 
@@ -106,7 +106,7 @@ After the first authenticated connection, initialize the standard user's PATH an
 & "$env:USERPROFILE\Developer\Initialize-JarvisEnvironment.ps1"
 ```
 
-This visible one-time helper changes only `jarvisdev`'s user PATH, confirms it is not elevated, prints tool versions, fetches origin and checks the Phase 3 ancestor. It does not perform elevation. Then exit and open a fresh session to verify the persisted environment. From the checkout, use the existing validation commands above. Authentication, fresh non-interactive PATH resolution, dependency installation and remote build/test execution must be verified before remote development is accepted.
+This visible one-time helper changes only `jarvisdev`'s user PATH, confirms it is not elevated, prints tool versions, fetches origin and checks the Phase 3 ancestor. It does not perform elevation. Then exit and open a fresh session to verify the persisted environment. From the checkout, use the existing validation commands above. Mac authentication succeeded; fresh non-interactive PATH resolution, dependency installation and remote build/test execution must still be verified before remote development is accepted.
 
 To disable access immediately, run these commands locally in an owner-approved elevated PowerShell session:
 
@@ -123,6 +123,7 @@ Troubleshooting:
 - A timeout: verify both devices are online in Tailscale, use IPv4, and check the service and the exact firewall addresses. A changed Mac Tailscale address requires a deliberate update to both the firewall scope and authorized-key source constraint.
 - A changed host-key warning: stop and compare the server's local public-key fingerprint. Do not delete known-host entries without verifying the reason.
 - A permission-denied login: confirm username `jarvisdev`, the selected Mac private key, and the protected user-owned authorized-key file. Do not enable password authentication as a workaround.
+- A pnpm PowerShell launcher reporting "operation attempted is not supported": the initial standard-account install skipped pnpm 12's native-binary installation script. The correction was verified in a separate local install; run `npm.cmd install --global --prefix "$env:APPDATA\npm" pnpm@12.4.2 --allow-scripts=pnpm --ignore-scripts=false --no-audit --no-fund` as `jarvisdev`, then repeat the environment helper. Confirmation in the remote account is pending. This is a package installation repair, not a Windows security exception. pnpm installation reference: <https://pnpm.io/installation/>.
 - Service error 1067: check SSH directory/log permissions and host-key ownership. On this machine, startup succeeded after existing host private keys were assigned to Administrators with access only for SYSTEM and Administrators, and SSH directory/log permissions were normalized. Keys were not regenerated. Microsoft references: <https://learn.microsoft.com/en-us/troubleshoot/windows-server/system-management-components/error-1053-1067-7034-after-update-openssh-doesnt-start> and <https://github.com/PowerShell/Win32-OpenSSH/wiki/Security-protection-of-various-files-in-win32-openssh>.
 - Native build error 4551: preserve Windows protections and resolve the signing/trust blocker; a passing TypeScript build does not establish Tauri readiness.
 
@@ -132,4 +133,4 @@ No public listener, router forwarding, broad SMB share, anonymous share or RDP e
 
 Defender, real-time protection, all Windows Firewall profiles and UAC were observed enabled. RDP was disabled; only built-in administrative SMB shares were present. No security exclusions or broad network shares were created. `.env` and private-key file patterns remain ignored; the project scan found no GitHub token or private-key markers. No JARVIS owner identity or session was transferred from the Mac. A new local JARVIS owner/database was not created.
 
-Before acceptance, finish the Mac authentication and command tests, resolve the native build signing/trust blocker without weakening the required protections, and complete the full workspace and Tauri validation. Windows Hello, connected-runtime recovery, per-user login startup and suspend/resume remain explicitly pending physical tasks.
+Before acceptance, finish the Mac command tests, resolve the native build signing/trust blocker without weakening the required protections, and complete the full workspace and Tauri validation. Windows Hello, connected-runtime recovery, per-user login startup and suspend/resume remain explicitly pending physical tasks.
