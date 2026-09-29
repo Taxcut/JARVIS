@@ -1,6 +1,6 @@
 # Gaming PC development target
 
-Bootstrap dates: 2026-09-26–28. This machine extends the primary Mac workflow; it is not a new JARVIS development stream. Prompt #4 has not started.
+Bootstrap dates: 2026-09-26–29. This machine extends the primary Mac workflow; it is not a new JARVIS development stream. Prompt #4 has not started.
 
 ## Acceptance status
 
@@ -40,23 +40,23 @@ pnpm --filter @jarvis/desktop tauri build --debug --no-bundle
 pnpm --filter @jarvis/desktop tauri build --no-bundle
 ```
 
-`pnpm runtime:prepare` stages the target-specific helper. Build frontend assets and prepare the helper before direct Cargo/Tauri builds. The documented interactive development command is `pnpm desktop`; an interactive desktop smoke test remains a later physical-validation task.
+`pnpm runtime:prepare` stages the target-specific helper. Build frontend assets and prepare the helper before direct Cargo/Tauri builds. The documented interactive development command is `pnpm desktop`; the development dashboard and standalone release dashboard both launched successfully during physical validation.
 
 Results on this physical PC:
 
-| Check                                             | Result                                                          |
-| ------------------------------------------------- | --------------------------------------------------------------- |
-| Frozen pnpm install                               | Passed; all nine workspace projects                             |
-| Formatting, lint, TypeScript, frontend/Core build | Passed                                                          |
-| Unit tests                                        | 31 passed                                                       |
-| Isolated real PostgreSQL integration              | 19 passed; test container cleaned up                            |
-| Rust fmt                                          | Passed                                                          |
-| Full workspace clippy, all targets                | Passed with warnings denied                                     |
-| Runtime and identity Rust tests                   | 14 passed; isolated native-store test separately passed         |
-| Runtime helper build/staging                      | Passed                                                          |
-| Full Rust workspace/native build                  | Passed September 28; fmt, check, clippy, tests and native build |
-| Tauri development build                           | Passed September 28; debug executable produced                  |
-| Tauri release build / desktop launch              | Not validated; development build is the bootstrap build target  |
+| Check                                             | Result                                                                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------- |
+| Frozen pnpm install                               | Passed; all nine workspace projects                                       |
+| Formatting, lint, TypeScript, frontend/Core build | Passed                                                                    |
+| Unit tests                                        | 31 passed                                                                 |
+| Isolated real PostgreSQL integration              | 19 passed; test container cleaned up                                      |
+| Rust fmt                                          | Passed                                                                    |
+| Full workspace clippy, all targets                | Passed with warnings denied                                               |
+| Runtime and identity Rust tests                   | 14 passed; isolated native-store test separately passed                   |
+| Runtime helper build/staging                      | Passed                                                                    |
+| Full Rust workspace/native build                  | Passed September 28; fmt, check, clippy, tests and native build           |
+| Tauri development build                           | Passed September 28; debug executable produced                            |
+| Tauri release build / desktop launch              | Passed: optimized no-bundle build and standalone packaged-frontend launch |
 
 On September 27, the full `pnpm rust:check` reached `cargo check --workspace` and failed with OS error 4551. The Windows Code Integrity event 3077 names `target\debug\build\webview2-com-sys-f2581f028e9d3e55\build-script-build.exe` and policy `{0283ac0f-fff1-49ae-ada1-8a933130cad6}`. Smart App Control policy state was enabled. That attempt was not a successful full native build.
 
@@ -72,7 +72,7 @@ The isolated `cargo test -p jarvis-identity native_store_roundtrip --locked -- -
 
 Source and tests confirm that the IPC command set is status/reconnect/stop/provision; unknown shell commands are rejected. Execution and future voice, capture, computer-control and remote-desktop capabilities remain unavailable. No Prompt #4 implementation was added.
 
-The existing Windows autostart implementation uses only the current user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` value `JARVIS Runtime`, containing a quoted fixed helper path plus `--supervise`. Enable/disable is separate from process stop. The code and current disabled state were inspected; a real enable/disable round trip, login/reboot and suspend/resume are still pending. Do not register a disposable build directory or create another autostart mechanism.
+The existing Windows autostart implementation uses only the current user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` value `JARVIS Runtime`, containing a quoted fixed helper path plus `--supervise`. Enable/disable is separate from process stop. The real desktop controls passed an enable/disable round trip, including registry verification. On September 29 this was repeated from the stable installed release: the entry exactly named its adjacent runtime helper, then was removed when disabled. No elevation was needed. Startup was left disabled and the disabled state was verified after the real September 29 reboot. Enabled automatic launch at login and suspend/resume remain later physical tests. Keep any lasting registration pointed at the stable installation, never a disposable build directory.
 
 ## Private remote development
 
@@ -84,7 +84,7 @@ The standard account has its own checkout at `C:\Users\jarvisdev\Developer\JARVI
 
 Windows Hello and the physical owner's Credential Manager validation must run in the actual desktop user session. The standard SSH account is a separate security identity, and an SSH build/test result does not establish physical-owner enrollment or Hello acceptance.
 
-The service uses delayed automatic startup, depends on TCP/IP and Tailscale, and has restart recovery configured. Its only verified listener is `100.69.78.125:22` (IPv4). The firewall rule `JARVIS-SSH-Tailscale-Mac` permits only source `100.92.70.2`, destination `100.69.78.125`, TCP 22, on the Tailscale interface. The default broad `OpenSSH-Server-In-TCP` rule is disabled. Password authentication and forwarding are disabled; public-key authentication is required, only `jarvisdev` is allowed, and administrators are denied. The authorized Mac key additionally restricts source address and forwarding.
+The service uses delayed automatic startup, depends on TCP/IP and Tailscale, and has restart recovery configured. After the real September 29 reboot (13:35 local), both services were running automatically and the private SSH listener was restored. Its only verified listener is `100.69.78.125:22` (IPv4). The firewall rule `JARVIS-SSH-Tailscale-Mac` permits only source `100.92.70.2`, destination `100.69.78.125`, TCP 22, on the Tailscale interface. The default broad `OpenSSH-Server-In-TCP` rule is disabled. Password authentication and forwarding are disabled; public-key authentication is required, only `jarvisdev` is allowed, and administrators are denied. The authorized Mac key additionally restricts source address and forwarding.
 
 Connect from the primary Mac with Tailscale active:
 
@@ -129,7 +129,7 @@ Troubleshooting:
 - Service error 1067: check SSH directory/log permissions and host-key ownership. On this machine, startup succeeded after existing host private keys were assigned to Administrators with access only for SYSTEM and Administrators, and SSH directory/log permissions were normalized. Keys were not regenerated. Microsoft references: <https://learn.microsoft.com/en-us/troubleshoot/windows-server/system-management-components/error-1053-1067-7034-after-update-openssh-doesnt-start> and <https://github.com/PowerShell/Win32-OpenSSH/wiki/Security-protection-of-various-files-in-win32-openssh>.
 - Native build error 4551: preserve Windows protections and resolve the signing/trust blocker; a passing TypeScript build does not establish Tauri readiness.
 
-No public listener, router forwarding, broad SMB share, anonymous share or RDP enablement was created by this bootstrap. Service behavior after a real reboot is still untested.
+No public listener, router forwarding, broad SMB share, anonymous share or RDP enablement was created by this bootstrap. Automatic SSH and Tailscale startup and the restricted SSH listener were verified after the September 29 reboot; the SSH event log confirms the expected Mac key was accepted and a command session opened at 13:40 September 29. The owner reported no visible output from that one-command check; an explicit-marker retry is pending before claiming post-reboot command-output validation.
 
 The remote install downloaded the locked packages and passed pnpm supply-chain checks, then failed with `ERR_PNPM_CMD_SHIM_READ_MANIFEST` / Windows error 448 at `node_modules\esbuild\package.json`. This is consistent with RedirectionGuard's restriction on non-admin-created junctions in an enforcing process; the sshd image has a mitigation policy configured. Microsoft describes the trust model at <https://www.microsoft.com/en-us/msrc/blog/2025/06/redirectionguard-mitigating-unsafe-junction-traversal-in-windows>. A scratch workspace confirmed that hoisted installation still creates workspace junctions, while injecting workspace packages changes frozen-lockfile requirements. No project dependency settings were changed.
 
@@ -141,4 +141,14 @@ The owner then approved completion of the frozen dependency layout using pnpm 12
 
 Defender, real-time protection, all Windows Firewall profiles and UAC were observed enabled. RDP was disabled; only built-in administrative SMB shares were present. No security exclusions or broad network shares were created. `.env` and private-key file patterns remain ignored; the project scan found no GitHub token or private-key markers. No JARVIS owner identity or session was transferred from the Mac. A new local JARVIS owner/database was not created.
 
-The required bootstrap development-build and Mac remote-command checks are complete. The prepared checkout supports standard-account checks; dependency updates are not fully unattended because newly created links can require owner-approved trust repair. Release packaging and interactive desktop UI acceptance were not performed. Windows Hello, connected-runtime recovery, per-user login startup and suspend/resume remain explicitly pending physical tasks.
+The required bootstrap development-build and Mac remote-command checks are complete. The prepared checkout supports standard-account checks; dependency updates are not fully unattended because newly created links can require owner-approved trust repair. The optimized Tauri no-bundle release and standalone desktop launch passed. Signed installers remain outside this repository's implemented packaging scope. Windows Hello/enrollment, connected-runtime recovery, enabled login launch and suspend/resume remain explicitly pending physical tasks allowed to be deferred by the bootstrap prompt. Do not create a replacement owner or reset secure storage merely to complete that later checklist; use docs/JARVISSETUP.md with the intended owner/Core.
+
+## Installed release and interactive validation
+
+`pnpm runtime:prepare --release` and `pnpm --filter @jarvis/desktop tauri build --no-bundle` passed on September 28. The matching desktop and runtime executables were copied together into `C:\Users\lanke\AppData\Local\Programs\JARVIS\0.3.0-bootstrap-302031f`; their hashes match the release output. The directory allows only the desktop owner, SYSTEM and Administrators. Both executables are development artifacts, not signed distribution installers.
+
+The development app rendered through the loopback Vite server. The release app rendered its embedded frontend at `http://tauri.localhost/` with that development server stopped. The release also reopened after the September 29 reboot. It truthfully displayed Not connected and execution unavailable. No Core connection or owner enrollment was forced.
+
+Start runtime launched one supervisor/worker pair. Closing the dashboard left the same pair alive; reopening the release dashboard rediscovered it. The runtime reported AUTH_REQUIRED after normal desktop initialization of its local Credential Manager identity, with no authenticated Core session. No existing enrollment was replaced and no Mac identity was imported. Stop runtime through the desktop stopped both processes. All temporary development-server processes were stopped. Per-user startup was restored to disabled after validation.
+
+The installed release helper also launched after the September 29 reboot from the protected installation path as exactly one supervisor/worker pair. It reported AUTH_REQUIRED, and the desktop Stop runtime control stopped both processes. Startup remained disabled.
