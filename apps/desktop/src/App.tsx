@@ -1,3 +1,6 @@
+import { VoiceExperience, VoiceSettings } from './VoiceExperience.js';
+import { useVoice } from './use-voice.js';
+import { BootSequence } from './BootSequence.js';
 import { RuntimePanel } from './RuntimePanel.js';
 import { useIdentity } from './use-identity.js';
 import { IdentityViews, IdentityEntry } from './IdentityViews.js';
@@ -37,7 +40,7 @@ const empty: Record<Section, [string, string]> = {
   ],
   Assistant: [
     'A quiet beginning.',
-    'Conversation and voice are planned for a later phase. No conversation has been created.',
+    'Your private voice conversation. Wake JARVIS when you’re ready.',
   ],
   Missions: [
     'No missions yet.',
@@ -73,7 +76,7 @@ const empty: Record<Section, [string, string]> = {
   ],
   Settings: [
     'Built around you, Sir.',
-    'The personality foundation supports adaptive response length and a calm, refined tone. Voice and personalization controls are not available yet.',
+    'Your voice, your devices, your preferences.',
   ],
 };
 export function App() {
@@ -82,6 +85,7 @@ export function App() {
   const [token, setToken] = useState('');
   const [base, setBase] = useState('http://127.0.0.1:4310');
   const identity = useIdentity(base);
+  const voice = useVoice();
   const [state, setState] = useState<SetupStatus | null>(null);
   const [connection, setConnection] = useState('Not connected');
   const [busy, setBusy] = useState(false);
@@ -118,11 +122,21 @@ export function App() {
       setBusy(false);
     }
   }
-  const hour = new Date().getHours();
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      hour: 'numeric',
+      hourCycle: 'h23',
+    }).format(new Date()),
+  );
   const greeting =
     hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   return (
     <div className="shell">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+      <BootSequence voice={voice} connected={identity.sync === 'LIVE'} />
       <aside>
         <a
           className="brand"
@@ -134,14 +148,18 @@ export function App() {
           }}
           aria-label="JARVIS home"
         >
-          <span className="brand-mark">J</span>
+          <img
+            className="brand-mark"
+            src="/brand/approved-j-master.png"
+            alt=""
+          />
           <span>
-            JARVIS<small>COMMAND CENTER</small>
+            JARVIS<small>PERSONAL INTELLIGENCE</small>
           </span>
         </a>
         <div className="nav-label">WORKSPACE</div>
         <nav aria-label="Main navigation">
-          {sections.map((name, i) => (
+          {sections.map((name) => (
             <button
               key={name}
               className={page === name ? 'active' : ''}
@@ -153,7 +171,23 @@ export function App() {
               }}
             >
               <span className="nav-symbol" aria-hidden="true">
-                {String(i + 1).padStart(2, '0')}
+                {
+                  {
+                    Core: '◈',
+                    Assistant: '∿',
+                    Missions: '⌁',
+                    Devices: '▱',
+                    Remote: '⌘',
+                    Memory: '◎',
+                    Automations: '⟳',
+                    Calls: '⌕',
+                    Security: '◇',
+                    Owner: '◉',
+                    Approvals: '✓',
+                    Diagnostics: '⌇',
+                    Settings: '⊙',
+                  }[name]
+                }
               </span>
               {name}
               {name === 'Core' && <span className="nav-dot" />}
@@ -161,11 +195,11 @@ export function App() {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <span className="small-dot" /> FOUNDATION
-          <small>Phase 03 · v0.3.0</small>
+          <span className="small-dot" /> PRIVATE BY DESIGN
+          <small>VOICE & PRESENCE · v0.4.0</small>
         </div>
       </aside>
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <header>
           <div className="breadcrumb">
             JARVIS <span>/</span> {setup ? 'SETUP' : page.toUpperCase()}
@@ -188,7 +222,7 @@ export function App() {
             {setup
               ? 'Connect the real system. Every step reflects actual implementation.'
               : page === 'Core'
-                ? 'Identity and trusted connections. Voice and computer control are future phases.'
+                ? 'A considered presence. Entirely yours.'
                 : empty[page][1]}
           </p>
           {setup ? (
@@ -305,12 +339,17 @@ export function App() {
                                       )
                                       ? 'Trusted'
                                       : 'Required'
-                                    : name === 'Security'
-                                      ? identity.snapshot
-                                          ?.recoveryCodesRemaining
-                                        ? 'Recovery codes available'
-                                        : 'Recovery setup required'
-                                      : 'Future phase · not configured'}
+                                    : name === 'Voice'
+                                      ? voice.status?.microphone &&
+                                        voice.status.ttsReady
+                                        ? 'Local voice ready'
+                                        : 'Configure in Settings'
+                                      : name === 'Security'
+                                        ? identity.snapshot
+                                            ?.recoveryCodesRemaining
+                                          ? 'Recovery codes available'
+                                          : 'Recovery setup required'
+                                        : 'Future phase · not configured'}
                         </small>
                       </div>
                     </li>
@@ -321,8 +360,8 @@ export function App() {
                 <IdentityEntry identity={identity} token={token} />
               ) : (
                 <p className="hint">
-                  Owner secured. Manage recovery in Security. Voice, phone,
-                  remote and production setup remain unconfigured.
+                  Owner secured. Manage recovery in Security and voice in
+                  Settings. Phone and remote control remain future work.
                 </p>
               )}
             </>
@@ -338,97 +377,21 @@ export function App() {
               )}
             </>
           ) : page === 'Settings' || page === 'Diagnostics' ? (
-            <RuntimePanel
-              base={base}
-              authenticated={identity.authenticated}
-              snapshot={identity.snapshot}
-              diagnostics={page === 'Diagnostics'}
-            />
-          ) : page === 'Core' ? (
             <>
-              <section className="hero panel">
-                <div className="hero-copy">
-                  <div className="eyebrow">JARVIS CORE / FOUNDATION</div>
-                  <h2>
-                    Your system.
-                    <br />
-                    Before the first command.
-                  </h2>
-                  <p>
-                    Connect Core and secure your owner identity. Voice and
-                    computer execution remain future work.
-                  </p>
-                  <button className="primary" onClick={() => setSetup(true)}>
-                    Begin Setup <span aria-hidden="true">↗</span>
-                  </button>
-                  <div className="hero-note">
-                    {identity.snapshot
-                      ? `${identity.snapshot.devices.filter((d) => d.trustState === 'trusted').length} trusted devices. No execution available.`
-                      : 'Sign in to view your trusted devices. Execution unavailable.'}
-                  </div>
-                </div>
-                <div className="presence" aria-hidden="true">
-                  <div className="axis horizontal" />
-                  <div className="axis vertical" />
-                  <div className="orb">
-                    <span>J</span>
-                  </div>
-                  <span className="presence-label">AWAITING CONFIGURATION</span>
-                </div>
-              </section>
-              <div className="section-heading">
-                <h2>System overview</h2>
-                <span>INITIAL STATE</span>
-              </div>
-              <div className="cards">
-                {[
-                  [
-                    'Core',
-                    identity.sync === 'LIVE'
-                      ? 'Connected'
-                      : state?.core === 'verified'
-                        ? 'Verified'
-                        : state
-                          ? 'Not configured'
-                          : 'Not connected',
-                    'Connection & database',
-                  ],
-                  [
-                    'Devices',
-                    identity.snapshot
-                      ? `${identity.snapshot.devices.filter((d) => d.trustState === 'trusted').length} trusted devices`
-                      : 'Sign in to view devices',
-                    'Trusted device network',
-                  ],
-                  [
-                    'Assistant',
-                    'Voice not configured',
-                    'Conversation & presence',
-                  ],
-                  ['Calls', 'Phone Link not configured', 'Calls & messages'],
-                  ['Missions', 'No missions yet', 'Planning & execution'],
-                  [
-                    'Security',
-                    identity.snapshot?.owner.securityState ??
-                      'Sign in to view security',
-                    'Identity & permissions',
-                  ],
-                ].map(([name, status, description]) => (
-                  <button
-                    className="card"
-                    key={name}
-                    onClick={() => setPage(name as Section)}
-                  >
-                    <div className="card-top">
-                      {name}
-                      <span aria-hidden="true">↗</span>
-                    </div>
-                    <h3>{status}</h3>
-                    <p>{description}</p>
-                  </button>
-                ))}
-              </div>
+              {page === 'Settings' && <VoiceSettings voice={voice} />}
+              <RuntimePanel
+                base={base}
+                authenticated={identity.authenticated}
+                snapshot={identity.snapshot}
+                diagnostics={page === 'Diagnostics'}
+              />
             </>
+          ) : page === 'Core' || page === 'Assistant' ? (
+            <VoiceExperience
+              voice={voice}
+              connected={identity.sync === 'LIVE'}
+              onSetup={() => setSetup(true)}
+            />
           ) : (
             <section className="empty panel">
               <div className="empty-mark" aria-hidden="true">
@@ -449,7 +412,7 @@ export function App() {
           )}
           <footer>
             <span>DESIGNED FOR DELIBERATE ACTION</span>
-            <span>Local foundation · macOS + Windows</span>
+            <span>PRIVATE INTELLIGENCE · macOS + Windows</span>
           </footer>
         </div>
       </main>

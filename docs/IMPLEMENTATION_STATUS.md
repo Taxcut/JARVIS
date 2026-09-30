@@ -1,3 +1,9 @@
+# Phase 4 — in progress
+
+Prompt #4 is authorized and underway. See [PHASE4_WORKLOG](PHASE4_WORKLOG.md)
+for current implementation and verification boundaries. Historical Phase 1–3
+evidence below remains valid; it does not imply Phase 4 acceptance.
+
 # Implementation status
 
 ## Phase 3 — COMPLETE for the current Mac scope; Windows physical acceptance intentionally deferred

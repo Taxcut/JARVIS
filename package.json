@@ -23,7 +23,9 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "configure": "tsx infra/scripts/configure.ts",
     "runtime:prepare": "node infra/scripts/prepare-runtime.mjs",
-    "desktop:bundle": "pnpm runtime:prepare --release && pnpm --filter @jarvis/desktop tauri build"
+    "desktop:bundle": "pnpm runtime:prepare --release && pnpm --filter @jarvis/desktop tauri build",
+    "voice:models": "cargo run --release -p jarvis-voice --example install_models",
+    "voice:probe": "cargo run --release -p jarvis-voice --example model_probe"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

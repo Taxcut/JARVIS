@@ -1,4 +1,5 @@
 import { registerRuntime } from './runtime.js';
+import { registerVoice } from './voice.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 import {
@@ -177,6 +178,7 @@ export async function registerIdentity(
     }),
   );
   await registerRuntime(app, identity);
+  await registerVoice(app, identity);
   await registerRealtime(app, store);
   const cleanup = setInterval(() => {
     void store

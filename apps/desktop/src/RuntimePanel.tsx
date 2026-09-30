@@ -105,8 +105,8 @@ export function RuntimePanel({
           {local ? local.state.replaceAll('_', ' ') : 'Runtime not running'}
         </h2>
         <p>
-          Your runtime stays active when this dashboard closes. Voice and
-          computer execution are unavailable.
+          Your runtime stays active when this dashboard closes. Voice runs here
+          when enabled. Computer execution remains unavailable.
         </p>
         {!isTauri() ? (
           <p>Open the native JARVIS desktop to manage this device’s runtime.</p>

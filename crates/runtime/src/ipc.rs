@@ -10,6 +10,10 @@ use tokio::{
 #[serde(tag = "command", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
     Status {},
+    VoiceConfigure { settings: jarvis_voice::Settings },
+    VoiceRetry {},
+    VoiceClear {},
+    VoiceGreet {},
     Reconnect {},
     Stop {},
     Provision { base: String, session: Value },

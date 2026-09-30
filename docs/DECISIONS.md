@@ -102,3 +102,25 @@ During final review, strengthen the report CHECK with an explicit key-existence/
 The final installed app uses a fresh complete bundle replacement: the earlier in-place update was rejected by macOS launch constraints despite passing on-disk signature verification. Unregister, quit, replace the stopped bundle and register again restored authenticated startup through SMAppService; no OS security or secure-storage bypass was used. The runtime remains ONLINE with startup ENABLED and the same trusted device. Dashboard quit/reopen again preserved its instance. Keep this distinction in setup/security guidance rather than claiming signature verification alone proves launchability.
 
 Windows physical acceptance remains intentionally deferred, with a Gaming PC checklist. Full Mac reboot/login was not forced; actual supported startup registration/launch/unregister/re-registration and naturally occurring sleep/wake were verified. Core/PostgreSQL supervision, production signing/notarization and delivery remain later work. Node 20 action deprecation warnings are non-blocking future maintenance. The owner has no remaining interactive action for this Mac closure; PR review/merge is a separate decision.
+
+## Phase 4 implementation checkpoint — 2026-09-29
+
+Prompt #4 is authorized on `feat/phase4-voice-cinematic`. The native runtime owns
+CPAL capture/playback, sherpa-onnx wake detection, echo processing and local
+Kokoro `bm_george` synthesis. Fresh installs keep voice disabled. Core brokers
+short-lived Realtime credentials only to signed, currently trusted runtime
+sessions in NORMAL security state; durable provider keys stay in backend setup.
+Provider responses are text, with no tools or execution interface. The native
+runtime sends conversation audio only after recognized wake activation.
+
+Runtime protocol 2 adds truthful voice/capture capability reporting and rejects
+old runtime registrations with update-required. Computer execution and all other
+future control capabilities remain unavailable. No new application data is seeded.
+
+The pinned Kokoro archive README documents 54 speakers (Spanish `em_santa` added
+at index 53); existing indices are unchanged, including George at 26. British
+pronunciation uses the supplied GB lexicon, avoiding a language override that
+failed in the packaged eSpeak build. The single terminal keyword `Jarvis`
+accepts both requested wake phrases; overlapping prefix/suffix rules caused
+missed synthetic detections and were removed. Stop-listening has a separate
+local keyword stream. See PHASE4_WORKLOG for acceptance still outstanding.
