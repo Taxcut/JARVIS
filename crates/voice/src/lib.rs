@@ -9,3 +9,6 @@ pub mod provider;
 pub mod controller;
 
 mod tail;
+
+mod cues;
+mod permission;

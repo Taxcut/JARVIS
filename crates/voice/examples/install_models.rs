@@ -16,7 +16,10 @@ fn install(
         .timeout(std::time::Duration::from_secs(600))
         .build()?;
     let mut response = client.get(url).send()?.error_for_status()?;
-    let mut file = fs::File::create(&archive)?;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&archive)?;
     let mut hash = Sha256::new();
     let mut buffer = [0u8; 65536];
     let mut total = 0;
@@ -60,14 +63,45 @@ fn install(
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = jarvis_voice::models::model_root()?;
-    fs::create_dir_all(&root)?;
+    let parent = root.parent().ok_or("Model parent is unavailable")?;
+    fs::create_dir_all(parent)?;
+    for ancestor in parent.ancestors() {
+        if fs::symlink_metadata(ancestor)?.file_type().is_symlink() {
+            return Err("Model parent must not contain symbolic links".into());
+        }
+    }
     if jarvis_voice::models::verify(&root).is_ok() {
         println!("Voice models already verified");
         return Ok(());
     }
-    install(&root,"wake","https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01.tar.bz2","f170013b4716e41b62b9bfd809687c207cef798ef9bc6534d524e17af9b6561a")?;
-    install(&root,"kokoro","https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2","4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e")?;
-    jarvis_voice::models::verify(&root)?;
+    // Never unpack over active models or follow pre-existing file links.
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let staging = parent.join(format!(".models-install-{stamp}"));
+    fs::create_dir(&staging)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&staging, fs::Permissions::from_mode(0o700))?;
+    }
+    install(&staging,"wake","https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01.tar.bz2","f170013b4716e41b62b9bfd809687c207cef798ef9bc6534d524e17af9b6561a")?;
+    install(&staging,"kokoro","https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2","4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e")?;
+    jarvis_voice::models::verify(&staging)?;
+    if root.symlink_metadata().is_ok() {
+        if fs::symlink_metadata(&root)?.file_type().is_symlink() {
+            return Err("Model destination must not be a symbolic link".into());
+        }
+        let backup = parent.join(format!(".models-previous-{stamp}"));
+        fs::rename(&root, &backup)?;
+        if let Err(error) = fs::rename(&staging, &root) {
+            let _ = fs::rename(&backup, &root);
+            return Err(error.into());
+        }
+        println!("Previous model directory retained locally for recovery");
+    } else {
+        fs::rename(&staging, &root)?;
+    }
     println!("All voice assets passed their individual integrity checks");
     Ok(())
 }

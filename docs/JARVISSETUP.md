@@ -137,3 +137,41 @@ For uninstall: disable login startup, stop runtime, quit the dashboard, then rem
 - Suspend/resume, lock/unlock and session transitions: stale sockets discarded, current auth checked, full resync and heartbeats resumed.
 - Verify revoked/expired credentials fail closed, lockdown remains visible, future capabilities unavailable and execution false.
 - Measure idle CPU/memory and inspect sanitized bounded logs on the physical PC. Hosted Windows tests do not substitute for these checks.
+
+## Phase 4 voice setup
+
+This supersedes earlier instructions that classify voice as future-only. Preserve
+existing owner identity, database, recovery codes and native secure storage.
+
+1. Keep the provider key in the Core's private `OPENAI_API_KEY`; never enter it in
+   the UI. The default `JARVIS_REALTIME_MODEL` is `gpt-realtime-2.1`. API credit is
+   separate from ChatGPT/model usage subscriptions.
+2. Run `pnpm runtime:prepare --release`, then `pnpm voice:models` on the device that
+   will run voice. Fixed model/native archives are integrity-checked. Models are
+   local user data, not frontend assets or Git content.
+3. Build/open the native app, connect its trusted background runtime, and select
+   the microphone/speaker in Settings. Choose visual quality and motion/startup
+   preferences. Browser preview cannot claim native microphone readiness.
+4. Enable voice deliberately. Approve the operating-system microphone dialog if
+   requested. Permission denial stops automatic retries; correct OS access, then
+   choose Reconnect audio. Device loss is shown explicitly.
+5. Test Jarvis, Hey Jarvis, immediate follow-on speech, George output, interruption,
+   mute and “Jarvis, stop listening.” Wake-only audio stays local; an active
+   conversation sends audio to OpenAI. Transcripts are transient and clearable.
+6. Confirm real provider response, restart/resume and sleep/wake before treating
+   voice as accepted. Missing models, exhausted provider credit or unperformed
+   physical checks must remain incomplete.
+
+For local Mac validation the signed application bundle is built with
+`pnpm runtime:prepare --release && pnpm --filter @jarvis/desktop tauri build --bundles app`.
+The optional DMG decoration step failed during this checkpoint and is not claimed
+as validated. Developer ID/notarization is still separate distribution work. Never
+clear owner storage to resolve an ordinary build or voice setup problem.
+
+On macOS, enabling native voice may show a separate microphone dialog after
+Keychain approval. These permissions are distinct. JARVIS waits without capturing
+until macOS grants microphone access. If denied, enable JARVIS in System Settings
+→ Privacy & Security → Microphone, then choose Settings → Reconnect audio. Do not
+reset Keychain or TCC permissions as a workaround. A ready label is not a substitute
+for a spoken acceptance check. Model installation now verifies into a fresh private
+staging directory and retains the previous model directory for recovery.

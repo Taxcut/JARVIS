@@ -43,3 +43,20 @@ A single bounded minute maintenance task expires security records, clears challe
 - AURA remains a distinct product with an explicit delegated Control API and no inherited JARVIS authority.
 
 Closing the desktop stops neither the independent runtime nor separately started Core. Explicit login startup registers only the user-session native runtime; Core/PostgreSQL lifecycle and future deployment remain separate. See RUNTIME for supervision, platform choices and failure boundaries. JARVIS defaults to addressing the owner as Sir. Overall product setup remains false: identity completion does not imply voice/phone/remote/deployment readiness. Fresh installs seed no operational records.
+
+## Phase 4 feature-branch implementation
+
+The prior planned-only voice boundary is now implemented behind `crates/voice`.
+The existing per-user runtime owns CPAL audio, sherpa-onnx wake detection, Sonora
+echo cancellation and local Kokoro synthesis. Model work runs outside callbacks;
+provider networking is asynchronous and credentials are delegated through the
+existing serialized scoped runtime client. React can configure declared settings
+and observe bounded local status; it receives neither provider keys nor microphone
+samples. The Core remains the credential broker and security authority. No database
+migration or operational fixtures are introduced by voice.
+
+Native output telemetry drives the procedural Three.js presence. Rendering stops
+when hidden/offscreen; quality and reduced-motion preferences are local. Startup
+respects actual readiness. An isolated visual entry supports synthetic state
+regression without adding test data to the product. See VOICE and DESIGN for exact
+boundaries and remaining physical acceptance.

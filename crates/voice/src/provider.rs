@@ -3,7 +3,13 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::time::Duration;
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::{
     client::IntoClientRequest, protocol::WebSocketConfig, Message,
@@ -41,16 +47,15 @@ impl Credential {
 }
 pub enum Input {
     Audio(Vec<f32>),
-    Interrupt,
 }
 pub enum Event {
     Connected,
     SpeechStarted,
     SpeechStopped,
-    User(String, String),
+    User(String, String, bool),
     Delta(String, String),
     Done(String, String),
-    Ended(&'static str),
+    Ended(&'static str, bool),
 }
 async fn send_event(tx: &mpsc::Sender<Event>, event: Event) -> Result<(), &'static str> {
     tx.try_send(event)
@@ -72,18 +77,24 @@ pub async fn run(
     credential: Credential,
     mut input: mpsc::Receiver<Input>,
     events: mpsc::Sender<Event>,
+    mut interrupt: mpsc::Receiver<()>,
+    active: Arc<AtomicBool>,
 ) {
-    let result = session(credential, &mut input, &events).await;
+    let result = session(credential, &mut input, &events, &mut interrupt, &active).await;
+    let failed = result.is_err();
     let _ = events.try_send(Event::Ended(
         result
             .err()
             .unwrap_or("Conversation ended. Say Jarvis when you need me."),
+        failed,
     ));
 }
 async fn session(
     credential: Credential,
     input: &mut mpsc::Receiver<Input>,
     events: &mpsc::Sender<Event>,
+    interrupt: &mut mpsc::Receiver<()>,
+    active: &AtomicBool,
 ) -> Result<(), &'static str> {
     let mut request = format!(
         "wss://api.openai.com/v1/realtime?model={}",
@@ -108,6 +119,8 @@ async fn session(
     .map_err(|_| "Voice connection timed out")?
     .map_err(|_| "Voice provider could not connect")?;
     drop(credential);
+    let mut owner_item = String::new();
+    let mut owner_text = String::new();
     let mut ready = false;
     let started = tokio::time::Instant::now();
     let mut activity = started;
@@ -115,18 +128,28 @@ async fn session(
     let mut assistant_item = String::new();
     let mut text = String::new();
     loop {
+        if !active.load(Ordering::Acquire) {
+            return Ok(());
+        }
         tokio::select! {
-         _=timer.tick()=>{if !ready && started.elapsed()>Duration::from_secs(10){return Err("Voice provider setup timed out");}
-            if started.elapsed()>Duration::from_secs(300)||activity.elapsed()>Duration::from_secs(45){let _=socket.close(None).await;return Ok(());}},
-         command=input.recv(), if ready=>{match command{
-          None=>{let _=socket.close(None).await;return Ok(());},
-          Some(Input::Audio(data))=>socket.send(Message::Text(packet(&data)?.into())).await.map_err(|_|"Voice connection was interrupted")?,
-          Some(Input::Interrupt)=>{
+         biased;
+         signal=interrupt.recv()=>{
+           if signal.is_none() { return Ok(()); }
            socket.send(Message::Text(json!({"type":"response.cancel"}).to_string().into())).await.map_err(|_|"Voice connection was interrupted")?;
            // Text-only provider output cannot be audio-truncated. Remove the interrupted
            // assistant item so unheard content is not represented as spoken history.
            if !assistant_item.is_empty(){socket.send(Message::Text(json!({"type":"conversation.item.delete","item_id":assistant_item}).to_string().into())).await.map_err(|_|"Voice connection was interrupted")?;assistant_item.clear();text.clear();}
-          }
+          },
+         _=timer.tick()=>{if !ready && started.elapsed()>Duration::from_secs(10){return Err("Voice provider setup timed out");}
+            if started.elapsed()>Duration::from_secs(300)||activity.elapsed()>Duration::from_secs(45){let _=socket.close(None).await;return Ok(());}},
+         command=input.recv(), if ready=>{match command{
+          None=>{let _=socket.close(None).await;return Ok(());},
+          Some(Input::Audio(data))=>{
+           // The callback fence also gates queued packets after mute, suspend or revocation.
+           if !active.load(Ordering::Acquire) {return Ok(());}
+           socket.send(Message::Text(packet(&data)?.into())).await.map_err(|_|"Voice connection was interrupted")?;
+          },
+
          }},
          frame=socket.next()=>{match frame{
           Some(Ok(Message::Text(raw)))=>{
@@ -138,7 +161,13 @@ async fn session(
             "session.created"=>{if v["session"]["output_modalities"]!=json!(["text"]) || v["session"]["tools"]!=json!([]){return Err("Voice provider session did not match the safe configuration");}ready=true;send_event(events,Event::Connected).await?;},
             "input_audio_buffer.speech_started"=>{activity=tokio::time::Instant::now();send_event(events,Event::SpeechStarted).await?;},
             "input_audio_buffer.speech_stopped"=>{activity=tokio::time::Instant::now();send_event(events,Event::SpeechStopped).await?;},
-            "conversation.item.input_audio_transcription.completed"=>{let t=v["transcript"].as_str().unwrap_or("");send_event(events,Event::User(id,t.chars().take(500).collect())).await?;},
+            "conversation.item.input_audio_transcription.delta"=>{
+             if owner_item!=id{owner_item=id.clone();owner_text.clear();}
+             let delta=v["delta"].as_str().unwrap_or("");
+             owner_text.extend(delta.chars().take(500usize.saturating_sub(owner_text.chars().count())));
+             send_event(events,Event::User(id,owner_text.clone(),false)).await?;
+            },
+            "conversation.item.input_audio_transcription.completed"=>{let t=v["transcript"].as_str().unwrap_or("");send_event(events,Event::User(id,t.chars().take(500).collect(),true)).await?;},
             "response.output_text.delta"=>{
              activity=tokio::time::Instant::now();if id!=assistant_item{assistant_item=id.clone();text.clear();}
              let delta=v["delta"].as_str().unwrap_or("");if text.len()+delta.len()>8192{return Err("Voice response exceeded its limit");}text.push_str(delta);send_event(events,Event::Delta(id,delta.into())).await?;

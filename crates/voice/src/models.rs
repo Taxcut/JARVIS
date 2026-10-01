@@ -97,6 +97,13 @@ pub struct Kokoro {
 }
 impl Kokoro {
     pub fn load(root: &Path) -> Result<Self, &'static str> {
+        Self::with_threads(root, if cfg!(target_os = "macos") { 4 } else { 2 })
+    }
+    /// Bounded benchmark/configuration boundary; no provider or voice substitution.
+    pub fn with_threads(root: &Path, threads: i32) -> Result<Self, &'static str> {
+        if !(1..=4).contains(&threads) {
+            return Err("Invalid speech worker budget");
+        }
         let root = root.join(TTS_DIR);
         let config = OfflineTtsConfig {
             model: OfflineTtsModelConfig {
@@ -109,7 +116,7 @@ impl Kokoro {
                     lang: None,
                     ..Default::default()
                 },
-                num_threads: 2,
+                num_threads: threads,
                 provider: Some("cpu".into()),
                 ..Default::default()
             },

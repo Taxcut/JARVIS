@@ -10,7 +10,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 [dependencies]
 jarvis-voice = { path = "../../../crates/voice" }
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 jarvis-runtime = { path = "../../../crates/runtime" }
 
 jarvis-identity = { path = "../../../crates/identity" }

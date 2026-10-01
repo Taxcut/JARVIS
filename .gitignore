@@ -16,3 +16,6 @@ apps/desktop/src-tauri/gen/
 
 # Generated target-specific runtime sidecars
 apps/desktop/src-tauri/binaries/
+
+# Isolated visual fixture output (never a production entry)
+.visual-build/

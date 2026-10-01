@@ -124,3 +124,37 @@ failed in the packaged eSpeak build. The single terminal keyword `Jarvis`
 accepts both requested wake phrases; overlapping prefix/suffix rules caused
 missed synthetic detections and were removed. Stop-listening has a separate
 local keyword stream. See PHASE4_WORKLOG for acceptance still outstanding.
+
+## Phase 4 refinement checkpoint (2026-09-30, acceptance still open)
+
+- Preserve the approved holographic J master; use a simplified monochrome angular
+  J for the native tray rather than shrinking the detailed master beyond legibility.
+  Original line glyphs replace font-dependent navigation symbols.
+- Keep input transcription partial/final state explicit. Native capture authority
+  gates queued uploads as well as callbacks; provider cancellation has a separate
+  bounded priority channel. Physical barge-in remains an acceptance test.
+- Poll selected/default device identity every two seconds for hotplug recovery;
+  reject non-finite capture/playback samples and bound transcript UTF-8 bytes so
+  the complete status reply remains within the existing private IPC limit.
+- Original additive sound cues use native volume/mute settings. Startup can be
+  full/reduced/off, and system reduced motion cannot be overridden by the app.
+  Ready state wins over animation. No new native execution command was introduced.
+- Mac Kokoro uses four CPU inference threads after the fixed-phrase comparison
+  improved synthesis from roughly 4.1 to 3.35 seconds for 3.12 seconds of audio.
+  One-thread output was rejected as invalid. Windows stays at two pending local
+  measurement. This is not a claim of acceptable end-to-end conversational latency.
+- Preserve the first checkpoint's successful hosted Linux/macOS/Windows run
+  36683188583 on 18d922b. Subsequent implementation changes require fresh CI.
+  Owner API billing still blocks live Realtime acceptance; do not infer a fix
+  from the owner's request to continue after a model-usage reset.
+
+## Physical microphone follow-up (2026-10-01)
+
+A real owner stop-listening attempt had no response. Do not infer microphone
+authorization solely from successful Core Audio stream construction. Follow
+[Apple's authorization API](<https://developer.apple.com/documentation/AVFoundation/AVCaptureDevice/authorizationStatus(for:)>)
+with asynchronous audio-only permission prompting before capture. Native runtime
+identity remains unchanged. Distinguish buffer/device/callback failures without
+logging samples. A short authority interruption invalidates the stream; recovery
+reopens it through current authorization rather than leaving a disabled callback
+behind an apparently active status. Physical success still requires owner evidence.

@@ -47,3 +47,9 @@ Integration tests create and remove their own PostgreSQL container. They never r
 See [implementation status](docs/IMPLEMENTATION_STATUS.md), [architecture](docs/ARCHITECTURE.md), and [security](docs/SECURITY.md). Later work uses focused branches and PRs with green validation; initial bootstrap uses `main`. Unsigned native compilation is validated on macOS/Windows; installers, signing and updates are future work.
 
 See [RUNTIME](docs/RUNTIME.md) for process boundaries and [JARVISSETUP](docs/JARVISSETUP.md#phase-3-runtime-installation-and-operations) for building/installing the bundled helper. Enable login startup explicitly in Settings. Closing the dashboard does not stop the runtime; stop/reconnect/disable are separate controls. Windows physical acceptance remains on the documented Gaming PC checklist.
+
+Phase 4 voice/presence is under validation on its feature branch. See
+[VOICE](docs/VOICE.md), [DESIGN](docs/DESIGN.md) and
+[IMPLEMENTATION_STATUS](docs/IMPLEMENTATION_STATUS.md) for current architecture,
+setup, verified checkpoints and remaining physical acceptance. Conversation does
+not grant computer execution; fresh installs contain no operational demo data.

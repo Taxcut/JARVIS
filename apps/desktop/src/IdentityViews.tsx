@@ -1,3 +1,4 @@
+import { Notice } from './Notice.js';
 import { useState } from 'react';
 import type { IdentityController } from './use-identity.js';
 const time = (value: string | null) =>
@@ -149,8 +150,8 @@ export function IdentityFeedback({
 }) {
   return (
     <div role="status" aria-live="polite">
-      {identity.notice && <p>{identity.notice}</p>}
-      {identity.error && <p className="error">{identity.error}</p>}
+      <Notice message={identity.notice} severity="info" />
+      <Notice message={identity.error} />
     </div>
   );
 }

@@ -4,6 +4,41 @@ Prompt #4 is authorized and underway. See [PHASE4_WORKLOG](PHASE4_WORKLOG.md)
 for current implementation and verification boundaries. Historical Phase 1–3
 evidence below remains valid; it does not imply Phase 4 acceptance.
 
+## Current Phase 4 checkpoint — 2026-10-01
+
+Draft [PR #4](https://github.com/Taxcut/JARVIS/pull/4) remains unmerged on
+`feat/phase4-voice-cinematic`. Phase 4 is **not complete**. Prompt #5 has not started.
+The first implementation checkpoint `18d922bbc606177779c97e315b3541bd05ef140e`
+passed [Validate 36683188583](https://github.com/Taxcut/JARVIS/actions/runs/36683188583):
+Linux TypeScript/PostgreSQL, macOS native and Windows native jobs all succeeded.
+Later refinements need their own hosted evidence.
+
+Current local refinements pass all 49 TypeScript tests plus formatting, lint,
+strict types and builds; full native Clippy and 28 Rust tests pass (the existing
+physical credential-store test remains intentionally ignored). Six separately
+captured deterministic visual states compare exactly to reviewed 1024×768 Mac
+baselines. Fixtures are isolated from the production entry and contain no owner
+information. The earlier 19 PostgreSQL integration tests remain applicable; no
+Core/database behavior changed in this refinement.
+
+The owner approved the rebuilt helper's Keychain dialog. Native dashboard quit
+and reopen preserved the running supervisor/worker and restored LIVE identity;
+private IPC confirmed ONLINE with no cloud audio. However, the owner's real
+“Jarvis, stop listening” attempt produced **no response**. Input telemetry stayed
+zero and a subsequent device failure was observed. This is a failed/pending
+physical check, not successful wake acceptance. The correction adds explicit
+macOS AVFoundation authorization, asynchronous permission waiting, distinct audio
+buffer failures, a stopped-callback watchdog and recovery from brief authority
+loss. A synthetic resampler/echo-cancellation test preserves near-end input;
+it does not prove physical microphone capture. Rebuilt physical acceptance is
+still required.
+
+Provider credential issuance and TLS connection succeeded earlier, but OpenAI
+returned `credit_balance_exhausted`; the owner has not confirmed API billing is
+fixed. No live conversation or physical barge-in pass is claimed. Further native
+voice, startup, lifecycle/performance and Windows remote checks remain open. See
+[PHASE4_WORKLOG](PHASE4_WORKLOG.md), [VOICE](VOICE.md) and [DESIGN](DESIGN.md).
+
 # Implementation status
 
 ## Phase 3 — COMPLETE for the current Mac scope; Windows physical acceptance intentionally deferred

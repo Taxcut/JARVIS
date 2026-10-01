@@ -31,7 +31,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     input.extend(vec![0.0; 32000]);
     let (tx, rx) = tokio::sync::mpsc::channel(128);
     let (events, mut result) = tokio::sync::mpsc::channel(64);
-    let task = tokio::spawn(provider::run(credential, rx, events));
+    let (_interrupt, signals) = tokio::sync::mpsc::channel(1);
+    let task = tokio::spawn(provider::run(
+        credential,
+        rx,
+        events,
+        signals,
+        std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true)),
+    ));
     let deadline = tokio::time::Instant::now() + Duration::from_secs(40);
     let mut sent = false;
     let mut answer = String::new();
@@ -58,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     });
                 }
             }
-            Event::User(_, _) => {
+            Event::User(_, _, _) => {
                 transcribed = true;
                 println!("Synthetic input transcription received");
             }
@@ -80,7 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 return Ok(());
             }
-            Event::Ended(e) => {
+            Event::Ended(e, _) => {
                 task.abort();
                 return Err(e.into());
             }

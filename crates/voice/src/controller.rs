@@ -158,6 +158,7 @@ fn speech_worker(
 }
 struct Connection {
     input: async_channel::Sender<Input>,
+    interrupt: async_channel::Sender<()>,
     events: async_channel::Receiver<Event>,
     task: tokio::task::JoinHandle<()>,
 }
@@ -278,7 +279,7 @@ impl Worker {
             }
         });
         if let Some(c) = &self.connection {
-            let _ = c.input.try_send(Input::Interrupt);
+            let _ = c.interrupt.try_send(());
         }
     }
     fn close(&mut self) {
@@ -331,6 +332,12 @@ impl Worker {
         }
     }
     fn initialize(&mut self) -> Result<(), &'static str> {
+        if !crate::permission::ready()? {
+            self.update(|s| s.permission = "PENDING".into());
+            self.phase(Phase::PermissionRequired, "Allow microphone access in the macOS dialog. Audio stays off until permission is granted.");
+            self.retry_at = Instant::now() + Duration::from_millis(250);
+            return Ok(());
+        }
         self.phase(
             Phase::Starting,
             "Preparing local wake detection and British voice…",
@@ -370,6 +377,18 @@ impl Worker {
             Phase::WakeOnly,
             "Listening locally for Jarvis. No audio is being sent online.",
         );
+        Ok(())
+    }
+    fn cue(&mut self, cue: crate::cues::Cue) -> Result<(), &'static str> {
+        if self.settings.sound_cues && self.settings.enabled && !self.settings.muted {
+            if let Some(audio) = self.audio.as_mut() {
+                audio.play(
+                    &crate::cues::render(cue),
+                    self.epoch.load(Ordering::Acquire),
+                    self.settings.volume,
+                )?;
+            }
+        }
         Ok(())
     }
     fn speak(&mut self, text: String) -> Result<(), &'static str> {
@@ -414,14 +433,18 @@ impl Worker {
             s.wake_count = s.wake_count.saturating_add(1);
             s.last_wake = Some(chrono::Utc::now().to_rfc3339());
         });
+        let _ = self.cue(crate::cues::Cue::Wake);
         self.phase(Phase::Listening, "I’m listening, Sir.");
     }
     fn provider_event(&mut self, event: Event) -> Result<(), &'static str> {
         match event {
-            Event::Connected => self.update(|s| {
-                s.provider_connected = true;
-                s.cloud_audio = true;
-            }),
+            Event::Connected => {
+                self.update(|s| {
+                    s.provider_connected = true;
+                    s.cloud_audio = true;
+                });
+                self.cue(crate::cues::Cue::Listening)?;
+            }
             Event::SpeechStarted => {
                 if self.pending_speech > 0 || self.audio.as_ref().is_some_and(|a| a.queued() > 0) {
                     self.cancel();
@@ -432,8 +455,8 @@ impl Worker {
                 self.suppress_response = false;
                 self.phase(Phase::Thinking, "One moment, Sir.");
             }
-            Event::User(id, text) => {
-                self.update(|s| s.transcript(&id, "owner", &text, true));
+            Event::User(id, text, final_text) => {
+                self.update(|s| s.transcript(&id, "owner", &text, final_text));
                 if text
                     .to_lowercase()
                     .replace([',', '.', '!'], "")
@@ -473,9 +496,19 @@ impl Worker {
                     self.update(|s| s.transcript(&id, "assistant", &text, true));
                 }
             }
-            Event::Ended(message) => {
+            Event::Ended(message, failed) => {
                 self.close();
-                self.phase(Phase::WakeOnly, message);
+                if failed {
+                    self.cue(crate::cues::Cue::Alert)?;
+                }
+                self.phase(
+                    if failed {
+                        Phase::Degraded
+                    } else {
+                        Phase::WakeOnly
+                    },
+                    message,
+                );
             }
         }
         Ok(())
@@ -486,9 +519,17 @@ impl Worker {
                 Ok(Ok(credential)) => {
                     let (tx, rx) = async_channel::channel(128);
                     let (events, out) = async_channel::channel(64);
-                    let task = self.handle.spawn(provider::run(credential, rx, events));
+                    let (interrupt, signals) = async_channel::channel(1);
+                    let task = self.handle.spawn(provider::run(
+                        credential,
+                        rx,
+                        events,
+                        signals,
+                        self.active.clone(),
+                    ));
                     self.connection = Some(Connection {
                         input: tx,
+                        interrupt,
                         events: out,
                         task,
                     });
@@ -506,7 +547,8 @@ impl Worker {
                 }
                 Ok(Err(e)) => {
                     self.close();
-                    self.phase(Phase::WakeOnly, e);
+                    self.cue(crate::cues::Cue::Alert)?;
+                    self.phase(Phase::Degraded, e);
                 }
                 Err(oneshot::error::TryRecvError::Closed) => {
                     return Err("Voice authorization was interrupted")
@@ -567,8 +609,11 @@ impl Worker {
             && self.status.lock().is_ok_and(|s| s.tts_ready)
             && self.connection.is_none()
             && self.pending.is_none()
+            && self.status.lock().is_ok_and(|s| s.input_level < 0.012)
+            && self.voiced == 0
         {
             self.greet_pending = false;
+            self.cue(crate::cues::Cue::Boot)?;
             self.last_greeting = Some(Instant::now());
             self.woken = Instant::now();
             let hour = chrono::Utc::now()
@@ -579,8 +624,18 @@ impl Worker {
         let Some(audio) = self.audio.as_mut() else {
             return Ok(());
         };
+        if audio.devices_changed(&self.settings) {
+            return Err("Audio devices changed. Reconnecting to your selected devices…");
+        }
         match audio.failure.load(Ordering::Acquire) {
             1 => return Err("Microphone permission is required"),
+            3 => return Err("Microphone processing fell behind. Reconnecting audio…"),
+            4 => {
+                return Err(
+                    "The microphone supplied invalid audio. Reconnect it or select another input.",
+                )
+            }
+            5 => return Err("The microphone buffer is unsupported. Select another input."),
             2.. => return Err("An audio device changed or stopped. Reconnecting…"),
             _ => {}
         }
@@ -773,6 +828,10 @@ impl Worker {
                         "Microphone muted. No audio is being captured.",
                     );
                 }
+            } else if self.audio.is_some() && !self.active.load(Ordering::Acquire) {
+                // A brief authority loss can invalidate callbacks between worker ticks.
+                // Reopen only through the normal current-authority checks next tick.
+                self.halt();
             } else if self.audio.is_none() {
                 if self.failures < 5 && Instant::now() >= self.retry_at {
                     if let Err(e) = self.initialize() {

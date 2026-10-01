@@ -1,3 +1,5 @@
+import { Notice } from './Notice.js';
+import { useVisualPreferences } from './visual-preferences.js';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import type { VoicePhase } from '@jarvis/protocol';
@@ -33,26 +35,8 @@ export function VoiceExperience({
   onSetup: () => void;
   connected: boolean;
 }) {
-  const [quality, setQuality] = useState<Quality>(() => {
-      try {
-        const saved = localStorage.getItem('jarvis.visualQuality');
-        return ['CINEMATIC', 'HIGH', 'BALANCED', 'LOW_POWER'].includes(
-          saved ?? '',
-        )
-          ? (saved as Quality)
-          : 'HIGH';
-      } catch {
-        return 'HIGH';
-      }
-    }),
-    [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const media = matchMedia('(prefers-reduced-motion: reduce)');
-    setReduced(media.matches);
-    const change = () => setReduced(media.matches);
-    media.addEventListener('change', change);
-    return () => media.removeEventListener('change', change);
-  }, []);
+  const { preferences, update, reduced } = useVisualPreferences();
+  const quality = preferences.quality;
   const status = voice.status,
     state = bodyState(status?.phase, connected),
     settings = status?.settings;
@@ -169,12 +153,7 @@ export function VoiceExperience({
             value={quality}
             onChange={(e) => {
               const value = e.target.value as Quality;
-              setQuality(value);
-              try {
-                localStorage.setItem('jarvis.visualQuality', value);
-              } catch {
-                /* Preference remains in memory. */
-              }
+              update({ quality: value });
             }}
           >
             {(['CINEMATIC', 'HIGH', 'BALANCED', 'LOW_POWER'] as const).map(
@@ -194,11 +173,7 @@ export function VoiceExperience({
             ? 'Wake detection stays on this device. No audio is being sent online.'
             : 'Your microphone is off. Voice starts only when you enable it.'}
       </p>
-      {voice.error && (
-        <div className="notice error" role="alert">
-          {voice.error}
-        </div>
-      )}
+      <Notice message={voice.error} />
       <div className="conversation-strip">
         <div className="section-heading">
           <h3>Conversation</h3>
@@ -253,6 +228,7 @@ type AudioDevice = {
   output: boolean;
 };
 export function VoiceSettings({ voice }: { voice: Voice }) {
+  const { preferences, update, systemReduced } = useVisualPreferences();
   const [devices, setDevices] = useState<AudioDevice[]>([]),
     [deviceError, setDeviceError] = useState('');
   useEffect(() => {
@@ -397,17 +373,53 @@ export function VoiceSettings({ voice }: { voice: Voice }) {
           voice.
         </p>
       )}
+      <div className="settings-grid visual-settings">
+        <label>
+          Startup animation
+          <select
+            value={preferences.startup}
+            onChange={(e) =>
+              update({ startup: e.target.value as 'full' | 'reduced' | 'off' })
+            }
+          >
+            <option value="full">Cinematic · shorter on repeat launches</option>
+            <option value="reduced">Reduced · simple fade</option>
+            <option value="off">Off · open workspace immediately</option>
+          </select>
+        </label>
+        <label>
+          Visual quality
+          <select
+            value={preferences.quality}
+            onChange={(e) => update({ quality: e.target.value as Quality })}
+          >
+            <option value="CINEMATIC">Cinematic</option>
+            <option value="HIGH">High</option>
+            <option value="BALANCED">Balanced</option>
+            <option value="LOW_POWER">Low power</option>
+          </select>
+        </label>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={preferences.reducedMotion}
+            onChange={(e) => update({ reducedMotion: e.target.checked })}
+          />
+          Reduce motion
+        </label>
+        {systemReduced && (
+          <p className="hint">
+            Your system’s reduced-motion preference is active.
+          </p>
+        )}
+      </div>
       <p className="hint">
         Muted means no capture. “Jarvis, stop listening” turns voice off until
         you enable it again. Transcripts disappear when the runtime closes;
         clear them at any time.
       </p>
-      {deviceError && <p className="error">{deviceError}</p>}
-      {voice.error && (
-        <p role="alert" className="error">
-          {voice.error}
-        </p>
-      )}
+      <Notice message={deviceError} />
+      <Notice message={voice.error} />
       {s && (
         <button
           className="secondary"

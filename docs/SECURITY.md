@@ -71,3 +71,47 @@ Startup is explicit and per-user: SMAppService with a bundled Aqua LaunchAgent o
 A malicious process already running as this OS user can interfere with this user's applications, replace user-writable binaries, deny IPC or access credentials according to OS policy. Same-user process compromise, OS administrators and database administrators remain outside the boundary. This limitation is explicit; local IPC is not an app-specific enclave. A crash between Core refresh rotation and secure-store persistence can require owner reconnection. Missing, denied or corrupt storage never falls back to a file. No private key, token, recovery value, provider secret, invasive inventory, microphone permission, screen capture or Accessibility grant is part of runtime diagnostics.
 
 Final installed-build validation encountered a macOS launch-constraint rejection after an earlier in-place bundle replacement, although on-disk signature verification passed. Unregistering, quitting and replacing the complete app bundle restored normal registration and authenticated startup. No Gatekeeper, SIP, launch constraint or Keychain protection was disabled. On-disk signature verification alone is not proof of successful startup; the acceptance check also verifies the actual managed process, protected IPC and current Core presence. Production signing and update delivery remain separate future work.
+
+## Phase 4 voice security review — validation in progress
+
+Voice is implemented on the feature branch, superseding the earlier future-voice
+statements for this checkpoint. Execution, telephony and remote computer control
+remain unavailable. Spoken content and provider text are untrusted: neither has a
+native action dispatcher, shell/file API or privileged tool. Core issues voice
+credentials only to the scoped runtime; React sees bounded status and transcript
+text, rendered as text rather than HTML. Provider credentials never enter React.
+
+Pre-wake audio stays local. Timestamp-limited post-keyword recovery avoids uploading
+ambient pre-roll, but false wake detection may expose subsequent speech to OpenAI.
+No speaker biometric authentication is implied. Capture/output and provider queues
+are bounded; mute/disable/revocation/suspend fence new capture, playback and queued
+network packets. A packet already sent cannot be revoked. Sessions expire locally;
+provider token expiry alone is not a live-connection cutoff. Cancellation is
+prioritized separately from buffered audio. Device loss has capped retries.
+
+Local IPC still requires the same user/verified pipe peer. Its narrow commands
+configure voice, retry, clear transient transcript or request a cooldown-controlled
+greeting; there is no arbitrary URL, text-to-speech text, filesystem or process
+execution command. A worst-case multibyte transcript/device-settings test verifies
+that status stays under the unchanged 16 KiB IPC budget. Audio, model results and
+settings reject non-finite/out-of-range data. Voice model/native archive hashes are
+pinned, models are outside Git and runtime loads reject symlinks.
+
+Provider error bodies and credentials are never logged. Native helper output is
+suppressed by the existing supervisor; no transcript crash reporting was added.
+Process memory can still contain active audio, credentials and text; operating-
+system crash dumps/debuggers are a residual local-access risk, not an application
+privacy guarantee. Six bounded transcript entries are memory-only. Settings contain
+no secrets. Tests and visual fixtures use isolated constant input only.
+
+Pending: real Mac wake/noise/barge-in/lifecycle acceptance, provider retry after
+owner billing correction and Windows physical privacy/voice checks. Automated
+passing tests do not close those requirements. See VOICE and IMPLEMENTATION_STATUS.
+
+Phase 4 microphone follow-up: macOS capture is gated by AVFoundation audio
+authorization before opening CPAL. Pending or denied permission leaves capture
+off. Denial requires owner correction in System Settings and an explicit retry;
+there is no TCC reset, database edit, security bypass or plaintext credential
+fallback. Audio diagnostics contain fixed error categories and aggregate levels,
+never samples or transcript text. The failed physical stop-listening attempt is
+recorded as unresolved, not treated as a privacy-control acceptance pass.

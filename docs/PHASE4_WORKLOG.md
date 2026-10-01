@@ -43,7 +43,7 @@ approved. Prompt #5 is not started. This record is not acceptance evidence.
 - Standard-user SSH to the prepared Windows machine succeeds; no security
   policy has been changed.
 
-## Still required
+## Still required at the initial checkpoint (superseded below)
 
 Native controller and provider integration; bounded input/output and barge-in;
 model installation and dependency integrity workflow; lifecycle/authority tests;
@@ -105,3 +105,51 @@ The signed `.app` bundle succeeds. The optional DMG decoration script failed;
 no distributable DMG is claimed. Apple notarization is not configured. Structural
 UI snapshots cover six real state mappings; pixel review/regression and physical
 voice acceptance are still outstanding.
+
+## Refined checkpoint — 2026-10-01
+
+Implemented native original sound cues, bounded priority provider cancellation,
+partial transcripts, authority checks on queued upload, finite/sample/UTF-8
+limits, selected/default device hotplug detection, private staged model install
+with digest verification before promotion and a retained previous-directory
+backup. Added persistent startup/motion/quality preferences, original navigation
+icons, platform-appropriate tray icons, explicit design tokens, accessible
+source-deduplicated inline notices, small/Retina/web brand assets and six isolated
+pixel baselines. The approved master stays unchanged.
+
+Verification: 49 TypeScript tests and all static/build checks pass. Workspace
+Clippy with warnings denied and 28 Rust tests pass; one existing physical secret
+store test is intentionally ignored. All six fresh visual captures match reviewed
+baselines exactly. Hosted Validate 36683188583 is successful on the earlier
+18d922b checkpoint, not automatically on these later changes.
+
+The four-thread Mac Kokoro fixed-phrase benchmark measured about 3.35 seconds of
+synthesis for 3.12 seconds of output, compared with about 4.1 seconds at two
+threads. One-thread output failed validation. This is still slower than the
+streaming product target; first audible output and interruption need actual
+conversation measurement. Windows retains two threads until measured there.
+
+Owner Keychain approval restored the helper and an explicit dashboard quit/reopen
+restored LIVE with the same worker. The owner's spoken stop-listening check failed
+(no response). Zero input and later audio-device degradation were observed.
+Opening a CPAL stream had incorrectly been treated as sufficient permission
+proof. macOS now checks AVFoundation authorization before opening capture and
+waits asynchronously for the native permission dialog. Further distinctions for
+buffer overrun/invalid samples/oversize buffers and missing callbacks support
+honest diagnostics. Physical validation remains open; this correction alone is
+not proof of the exact original failure cause.
+
+No provider retry follows a model-usage reset: API billing is a separate unresolved
+owner action. Windows pnpm install remains blocked by untrusted junction policy;
+security protections stay enabled. Native compilation on the real PC passed at
+18d922b. Updated native tests/models and hosted CI are next. No merge, Prompt #5,
+new operational fixtures, owner credential reset or execution capability.
+
+The corrected signed Mac app was built, verified and installed as a complete
+bundle, with the prior bundle preserved locally. The dashboard restored LIVE
+identity. After Start runtime, the helper reports STARTING with capture/cloud
+audio off while secure-storage approval is pending. The owner is away; no
+password was requested, accepted or stored. Continue protected approval and
+physical microphone checks when the owner returns. Supplied-secret/high-confidence
+scans passed for candidate files and reachable history; private .env remains
+ignored with mode 0600.

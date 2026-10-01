@@ -1,3 +1,4 @@
+import { Notice } from './Notice.js';
 import { useEffect, useState } from 'react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { z } from 'zod';
@@ -222,7 +223,7 @@ export function RuntimePanel({
             <dd>{local.lastError ?? 'None'}</dd>
           </dl>
         )}
-        <div role="status">{error && <p className="error">{error}</p>}</div>
+        <Notice message={error} />
         {snapshot?.devices.map((device) => {
           const presence = snapshot.runtimePresence?.find(
             (r) => r.deviceId === device.id,

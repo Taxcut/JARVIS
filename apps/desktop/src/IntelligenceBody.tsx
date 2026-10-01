@@ -169,7 +169,8 @@ export function IntelligenceBody({
       last = 0,
       time = 0,
       smoothed = 0,
-      visible = true;
+      visible = true,
+      lastStatic = '';
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry?.isIntersecting ?? false;
     });
@@ -190,7 +191,10 @@ export function IntelligenceBody({
         d.state === 'SPEAKING'
           ? Math.min(1, d.level * 7 + (d.bands[1] ?? 0) * 2)
           : 0;
-      smoothed += (live - smoothed) * 0.28;
+      const signature = `${d.state}:${live}:${renderer.domElement.width}:${renderer.domElement.height}`;
+      if (reduced && signature === lastStatic) return;
+      lastStatic = signature;
+      smoothed = reduced ? live : smoothed + (live - smoothed) * 0.28;
       material.uniforms.time!.value = time;
       material.uniforms.level!.value = smoothed;
       material.uniforms.pulse!.value =
@@ -211,6 +215,10 @@ export function IntelligenceBody({
         r.rotation.z = time * (i % 2 ? -0.025 : 0.015);
       });
       renderer.render(scene, camera);
+      // Observable compositor readiness for isolated visual capture, never a fake state.
+      if (el.dataset.renderedState !== d.state)
+        el.dataset.renderedState = d.state;
+      if (reduced) el.dataset.renderedLevel = smoothed.toFixed(3);
     };
     frame = requestAnimationFrame(draw);
     const lost = (event: Event) => {

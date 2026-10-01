@@ -1,3 +1,4 @@
+mod tray;
 use jarvis_identity::client::{NativeClient, NativeStatus};
 use serde_json::Value;
 use tokio::sync::Mutex;
@@ -139,6 +140,7 @@ async fn voice_control(action: String) -> Result<jarvis_runtime::ipc::Reply, Str
 pub fn run() {
     debug_assert!(!jarvis_runtime::status().execution_available);
     tauri::Builder::default()
+        .setup(tray::setup)
         .manage(IdentityState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             native_status,

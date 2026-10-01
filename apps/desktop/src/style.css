@@ -1,6 +1,6 @@
 :root {
   font-family:
-    Inter,
+    Manrope,
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
@@ -30,7 +30,7 @@ button {
   cursor: pointer;
 }
 button:disabled {
-  opacity: 0.45;
+  opacity: var(--opacity-disabled);
   cursor: wait;
 }
 button:focus-visible,
@@ -89,7 +89,7 @@ aside {
   color: #a4e2ff;
   font-size: 23px;
   font-weight: 300;
-  transform: skew(-8deg);
+  transform: none;
 }
 .nav-label {
   font-size: 9px;
@@ -203,7 +203,7 @@ p {
 }
 .panel {
   border: 1px solid #243647;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: linear-gradient(115deg, #101d2a, #0b131e 65%);
 }
 .hero {
@@ -328,7 +328,7 @@ p {
 }
 .card {
   border: 1px solid #202f3e;
-  border-radius: 6px;
+  border-radius: var(--radius-small);
   padding: 21px;
   text-align: left;
   background: #0c1520;
@@ -571,11 +571,11 @@ footer {
   border: 1px solid #385262;
   background: #112430;
   color: #d6edf6;
-  border-radius: 6px;
+  border-radius: var(--radius-small);
   cursor: pointer;
 }
 .identity-panel button:disabled {
-  opacity: 0.45;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 .identity-row {
@@ -663,7 +663,34 @@ footer {
   --gold: #e9bc77;
   --danger: #f2a093;
   --radius: 12px;
-  font-family: Manrope, sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius-small: 6px;
+  --radius-control: 8px;
+  --border: var(--line);
+  --status-success: #aad9c6;
+  --status-warning: var(--gold);
+  --status-error: var(--danger);
+  --font-body: Manrope, sans-serif;
+  --font-heading: Sora, Manrope, sans-serif;
+  --text-small: 12px;
+  --text-body: 14px;
+  --control-height: 40px;
+  --icon-size: 20px;
+  --motion-fast: 160ms;
+  --motion-standard: 240ms;
+  --ease-settle: cubic-bezier(0.18, 0.7, 0.2, 1);
+  --layer-boot: 100;
+  --layer-focus: 200;
+  --opacity-disabled: 0.45;
+  --focus-ring: 2px solid var(--cyan);
+  --shadow-panel: 0 16px 48px #00000024;
+  --glow-brand: 0 0 80px #65ccef16;
+  font-family: var(--font-body);
   color: var(--text);
   background: var(--ink);
 }
@@ -675,7 +702,7 @@ h1,
 h2,
 h3,
 .brand {
-  font-family: Sora, Manrope, sans-serif;
+  font-family: var(--font-heading);
 }
 h1 {
   font-size: clamp(26px, 3.2vw, 39px);
@@ -883,7 +910,7 @@ select {
   color: var(--text);
   background: #080e15;
   border: 1px solid #3a4b58;
-  border-radius: 6px;
+  border-radius: var(--radius-small);
   padding: 11px 12px;
   max-width: 100%;
 }
@@ -895,7 +922,7 @@ select:focus-visible,
 input:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--cyan);
+  outline: var(--focus-ring);
   outline-offset: 4px;
 }
 input[type='range'] {
@@ -912,7 +939,7 @@ input[type='checkbox'] {
   position: fixed;
   top: -80px;
   left: 16px;
-  z-index: 200;
+  z-index: var(--layer-focus);
   background: var(--cyan);
   color: #071922;
   padding: 14px;
@@ -1204,14 +1231,14 @@ footer {
   padding: 14px 18px;
   border: 1px solid #865d5160;
   background: #29171480;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   font-size: 12px;
   margin: 18px 0;
 }
 .boot-sequence {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: var(--layer-boot);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1224,7 +1251,7 @@ footer {
   height: 155px;
   object-fit: cover;
   border-radius: 25px;
-  box-shadow: 0 0 80px #65ccef16;
+  box-shadow: var(--glow-brand);
   animation: brand-reveal 1700ms cubic-bezier(0.18, 0.7, 0.2, 1);
 }
 .boot-sequence h2 {
@@ -1443,4 +1470,127 @@ footer {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Explicit owner preference complements the system accessibility setting. */
+:root[data-reduced-motion='true'] *,
+:root[data-reduced-motion='true'] *::before,
+:root[data-reduced-motion='true'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+.boot-reduced .boot-orbit {
+  display: none;
+}
+.boot-reduced img {
+  animation: none;
+}
+.visual-settings {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 24px;
+}
+
+/* Compact desktop chrome keeps every destination reachable at laptop height. */
+aside {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+aside .brand {
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+nav {
+  gap: 2px;
+}
+nav button {
+  margin: 0;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+.sidebar-foot {
+  padding-top: 24px;
+}
+.presence-page .content {
+  padding-top: 22px;
+}
+.presence-page .content > .eyebrow {
+  margin-bottom: 8px;
+}
+.presence-page .content > h1 {
+  font-size: clamp(24px, 2.4vw, 34px);
+  margin: 0 0 8px;
+}
+.presence-page .intro {
+  margin: 0 0 18px;
+}
+.presence-page .presence-stage {
+  height: clamp(340px, 54dvh, 620px);
+}
+.presence-page .intelligence-body {
+  height: calc(100% - 45px);
+}
+.nav-symbol svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.boot-repeat .boot-orbit {
+  animation-duration: 2s;
+}
+@media (max-width: 760px) {
+  .shell {
+    display: flex;
+  }
+  aside {
+    flex-shrink: 0;
+    height: 100dvh;
+    border-right: 1px solid #26303990;
+    border-bottom: 0;
+  }
+  aside .brand {
+    margin-bottom: 18px;
+  }
+  nav {
+    display: grid;
+    overflow: visible;
+  }
+  nav button {
+    padding: 8px 0;
+    min-height: 40px;
+  }
+  nav .nav-symbol {
+    display: block;
+  }
+  .presence-page .presence-stage {
+    height: 390px;
+  }
+  .presence-page .intelligence-body {
+    height: 305px;
+  }
+}
+
+/* A single visible notice per source: errors persist until resolved or retried. */
+.product-notice {
+  padding: var(--space-3) var(--space-4);
+  margin-block: var(--space-4);
+  border: 1px solid var(--line);
+  border-inline-start: 3px solid var(--cyan);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  font-size: var(--text-body);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.product-notice[data-severity='error'],
+.product-notice[data-severity='critical'] {
+  border-inline-start-color: var(--status-error);
+}
+.product-notice[data-severity='warning'] {
+  border-inline-start-color: var(--status-warning);
+}
+.product-notice[data-severity='success'] {
+  border-inline-start-color: var(--status-success);
 }

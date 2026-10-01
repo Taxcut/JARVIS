@@ -1,3 +1,5 @@
+import { Notice } from './Notice.js';
+import { ProductIcon } from './ProductIcon.js';
 import { VoiceExperience, VoiceSettings } from './VoiceExperience.js';
 import { useVoice } from './use-voice.js';
 import { BootSequence } from './BootSequence.js';
@@ -130,9 +132,17 @@ export function App() {
     }).format(new Date()),
   );
   const greeting =
-    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    hour < 5 || hour >= 23
+      ? 'Good night'
+      : hour < 12
+        ? 'Good morning'
+        : hour < 18
+          ? 'Good afternoon'
+          : 'Good evening';
   return (
-    <div className="shell">
+    <div
+      className={`shell ${!setup && (page === 'Core' || page === 'Assistant') ? 'presence-page' : ''}`}
+    >
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -171,23 +181,7 @@ export function App() {
               }}
             >
               <span className="nav-symbol" aria-hidden="true">
-                {
-                  {
-                    Core: '◈',
-                    Assistant: '∿',
-                    Missions: '⌁',
-                    Devices: '▱',
-                    Remote: '⌘',
-                    Memory: '◎',
-                    Automations: '⟳',
-                    Calls: '⌕',
-                    Security: '◇',
-                    Owner: '◉',
-                    Approvals: '✓',
-                    Diagnostics: '⌇',
-                    Settings: '⊙',
-                  }[name]
-                }
+                <ProductIcon name={name} />
               </span>
               {name}
               {name === 'Core' && <span className="nav-dot" />}
@@ -293,7 +287,7 @@ export function App() {
                         and security setup remain incomplete.
                       </p>
                     )}
-                    {error && <p className="error">{error}</p>}
+                    <Notice message={error} />
                   </div>
                 </div>
                 <ol className="steps">
@@ -390,7 +384,9 @@ export function App() {
             <VoiceExperience
               voice={voice}
               connected={identity.sync === 'LIVE'}
-              onSetup={() => setSetup(true)}
+              onSetup={() =>
+                identity.sync === 'LIVE' ? setPage('Settings') : setSetup(true)
+              }
             />
           ) : (
             <section className="empty panel">
@@ -406,7 +402,7 @@ export function App() {
                 </button>
               )}
               <div role="status">
-                {error && <p className="error">{error}</p>}
+                <Notice message={error} />
               </div>
             </section>
           )}

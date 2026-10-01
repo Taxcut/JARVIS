@@ -15,7 +15,7 @@ use std::{
         mpsc::{self, Receiver, SyncSender},
         Arc, Mutex,
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,6 +58,10 @@ pub struct Audio {
     pub output_bands: Arc<[AtomicU32; 3]>,
     playback: Arc<Mutex<Playback>>,
     output_rate: u32,
+    input_id: String,
+    output_id: String,
+    device_check: Instant,
+    last_capture: Instant,
     capture_pending: VecDeque<f32>,
     render_pending: VecDeque<f32>,
     apm: sonora::AudioProcessing,
@@ -88,7 +92,7 @@ impl Convert {
         })
     }
     fn push(&mut self, samples: &[f32], out: &mut VecDeque<f32>) -> Result<(), &'static str> {
-        if samples.len() > 8192 {
+        if samples.len() > 8192 || samples.iter().any(|v| !v.is_finite()) {
             return Err("Audio input exceeded its buffer limit");
         }
         self.pending.extend(samples.iter().copied());
@@ -160,15 +164,22 @@ where
                 return;
             }
             if data.len() / channels > 8192 {
-                fail.store(2, Ordering::Release);
+                fail.store(5, Ordering::Release);
                 return;
             }
             let mono: Vec<f32> = data
                 .chunks_exact(channels)
-                .map(|f| f.iter().map(|x| x.to_sample::<f32>()).sum::<f32>() / channels as f32)
+                .map(|f| {
+                    f.iter()
+                        .map(|x| x.to_sample::<f32>().clamp(-1.0, 1.0))
+                        .sum::<f32>()
+                        / channels as f32
+                })
                 .collect();
-            if tx.try_send(mono).is_err() {
-                fail.store(2, Ordering::Release);
+            if mono.iter().any(|v| !v.is_finite()) {
+                fail.store(4, Ordering::Release);
+            } else if tx.try_send(mono).is_err() {
+                fail.store(3, Ordering::Release);
             }
         },
         move |e| mark_failure(e, &failure),
@@ -329,6 +340,16 @@ impl Audio {
             output_bands,
             playback,
             output_rate: or,
+            input_id: mic
+                .id()
+                .map_err(|_| "Microphone identity is unavailable")?
+                .to_string(),
+            output_id: speaker
+                .id()
+                .map_err(|_| "Speaker identity is unavailable")?
+                .to_string(),
+            device_check: Instant::now(),
+            last_capture: Instant::now(),
             capture_pending: VecDeque::new(),
             render_pending: VecDeque::new(),
             apm: sonora::AudioProcessing::builder()
@@ -337,6 +358,28 @@ impl Audio {
                 .render_config(stream)
                 .build(),
         })
+    }
+    pub fn devices_changed(&mut self, settings: &Settings) -> bool {
+        if self.device_check.elapsed() < Duration::from_secs(2) {
+            return false;
+        }
+        self.device_check = Instant::now();
+        let host = cpal::default_host();
+        let id = |input| {
+            choose(
+                &host,
+                if input {
+                    &settings.input_device
+                } else {
+                    &settings.output_device
+                },
+                input,
+            )
+            .ok()
+            .and_then(|d| d.id().ok())
+            .map(|id| id.to_string())
+        };
+        id(true).as_deref() != Some(&self.input_id) || id(false).as_deref() != Some(&self.output_id)
     }
     pub fn read(&mut self) -> Result<Vec<[f32; 160]>, &'static str> {
         for _ in 0..32 {
@@ -356,13 +399,18 @@ impl Audio {
         }
         for _ in 0..32 {
             match self.input.try_recv() {
-                Ok(data) => self
-                    .input_resampler
-                    .push(&data, &mut self.capture_pending)?,
+                Ok(data) => {
+                    self.last_capture = Instant::now();
+                    self.input_resampler
+                        .push(&data, &mut self.capture_pending)?;
+                }
                 Err(_) => break,
             }
         }
         let mut frames = Vec::new();
+        if self.last_capture.elapsed() > Duration::from_secs(3) {
+            return Err("The microphone stopped delivering audio. Check microphone access and reconnect audio.");
+        }
         while self.capture_pending.len() >= 160 {
             let data: Vec<f32> = self.capture_pending.drain(..160).collect();
             let mut out = [0.0; 160];
@@ -382,6 +430,12 @@ impl Audio {
         generation: u64,
         volume: f32,
     ) -> Result<(), &'static str> {
+        if samples.len() > 24000 * 30
+            || samples.iter().any(|v| !v.is_finite())
+            || !volume.is_finite()
+        {
+            return Err("Speech audio was invalid");
+        }
         let output = resample_playback(samples, 24000, self.output_rate);
         let mut p = self
             .playback
@@ -418,6 +472,37 @@ pub fn resample_playback(input: &[f32], from: u32, to: u32) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn local_capture_preserves_near_end_audio_without_playback() {
+        let stream = sonora::StreamConfig::new(16000, 1);
+        let mut apm = sonora::AudioProcessing::builder()
+            .config(sonora::Config {
+                echo_canceller: Some(sonora::config::EchoCanceller::default()),
+                ..Default::default()
+            })
+            .capture_config(stream)
+            .render_config(stream)
+            .build();
+        let mut converter = Convert::new(48000).unwrap();
+        let mut pending = VecDeque::new();
+        let mut energy = 0.0;
+        for block in 0..100 {
+            let input: Vec<f32> = (0..480)
+                .map(|i| ((block * 480 + i) as f32 * 0.07).sin() * 0.1)
+                .collect();
+            converter.push(&input, &mut pending).unwrap();
+            while pending.len() >= 160 {
+                let frame: Vec<f32> = pending.drain(..160).collect();
+                let mut output = [0.0; 160];
+                apm.process_render_f32(&[&[0.0; 160]], &mut [&mut output])
+                    .unwrap();
+                apm.process_capture_f32(&[&frame], &mut [&mut output])
+                    .unwrap();
+                energy += output.iter().map(|v| v * v).sum::<f32>();
+            }
+        }
+        assert!(energy > 1.0, "near-end microphone audio was suppressed");
+    }
     #[test]
     fn resampler_is_bounded_and_preserves_duration() {
         let input = vec![0.25; 2400];

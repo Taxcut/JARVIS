@@ -38,8 +38,9 @@ impl Settings {
             || !self.volume.is_finite()
             || !(0.0..=1.0).contains(&self.volume)
             || [&self.input_device, &self.output_device].iter().any(|v| {
-                v.as_ref()
-                    .is_some_and(|s| s.is_empty() || s.len() > 512 || s.contains('\0'))
+                v.as_ref().is_some_and(|s| {
+                    s.is_empty() || s.len() > 512 || s.chars().any(char::is_control)
+                })
             })
         {
             return Err("Voice settings are invalid");
@@ -128,6 +129,10 @@ impl VoiceStatus {
             .chars()
             .filter(|c| !c.is_control() || *c == '\n')
             .take(500)
+            .scan(0usize, |bytes, c| {
+                *bytes += c.len_utf8();
+                (*bytes <= 1000).then_some(c)
+            })
             .collect();
         if let Some(item) = self.transcripts.iter_mut().find(|t| t.id == id) {
             item.text = text;
