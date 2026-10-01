@@ -115,3 +115,10 @@ there is no TCC reset, database edit, security bypass or plaintext credential
 fallback. Audio diagnostics contain fixed error categories and aggregate levels,
 never samples or transcript text. The failed physical stop-listening attempt is
 recorded as unresolved, not treated as a privacy-control acceptance pass.
+
+Privacy-write failure follow-up: a mute/off request remains effective in memory
+even if saving settings fails. Capture stays off and an actionable warning remains
+visible; successful retry clears it. A regression test covers both mute and
+disable against a failing settings store. Pending startup speech is cancelled by
+privacy/lifecycle shutdown, and sound cues can remain enabled independently of
+the optional spoken greeting. Voice tests now total 13 on macOS.

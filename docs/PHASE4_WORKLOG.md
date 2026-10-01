@@ -153,3 +153,10 @@ password was requested, accepted or stored. Continue protected approval and
 physical microphone checks when the owner returns. Supplied-secret/high-confidence
 scans passed for candidate files and reachable history; private .env remains
 ignored with mode 0600.
+
+Privacy-write failure follow-up: a mute/off request remains effective in memory
+even if saving settings fails. Capture stays off and an actionable warning remains
+visible; successful retry clears it. A regression test covers both mute and
+disable against a failing settings store. Pending startup speech is cancelled by
+privacy/lifecycle shutdown, and sound cues can remain enabled independently of
+the optional spoken greeting. Voice tests now total 13 on macOS.

@@ -169,6 +169,7 @@ impl Drop for Connection {
 }
 struct Worker {
     settings: Settings,
+    settings_error: Option<&'static str>,
     save: Save,
     credentials: async_channel::Sender<CredentialRequest>,
     status: Arc<Mutex<VoiceStatus>>,
@@ -217,6 +218,7 @@ impl Worker {
     ) -> Self {
         Self {
             settings,
+            settings_error: None,
             save,
             credentials,
             status,
@@ -260,7 +262,10 @@ impl Worker {
     fn phase(&self, phase: Phase, message: &str) {
         self.update(|s| {
             s.phase = phase;
-            s.message = message.into();
+            s.message = match self.settings_error {
+                Some(error) => format!("{message} {error}"),
+                None => message.into(),
+            };
         });
     }
     fn cancel(&mut self) {
@@ -302,6 +307,7 @@ impl Worker {
     }
     fn halt(&mut self) {
         self.close();
+        self.greet_pending = false;
         self.active.store(false, Ordering::Release);
         self.audio = None;
         self.update(|s| {
@@ -619,7 +625,9 @@ impl Worker {
             let hour = chrono::Utc::now()
                 .with_timezone(&chrono_tz::America::New_York)
                 .hour();
-            self.speak(crate::greeting(hour).into())?;
+            if self.settings.greeting {
+                self.speak(crate::greeting(hour).into())?;
+            }
         }
         let Some(audio) = self.audio.as_mut() else {
             return Ok(());
@@ -759,6 +767,42 @@ impl Worker {
         }
         Ok(())
     }
+    fn configure(&mut self, settings: Settings) {
+        if settings.validate().is_err() {
+            return;
+        }
+        if (self.save)(&settings).is_err() {
+            // Disk failure must never undo an owner's immediate privacy choice.
+            // Keep mute/off in memory even though persistence needs another retry.
+            if !settings.enabled || settings.muted {
+                self.halt();
+                self.settings.enabled = settings.enabled;
+                self.settings.muted = settings.muted;
+                self.update(|s| s.settings = self.settings.clone());
+            }
+            self.settings_error =
+                Some("This change could not be saved. Retry before restarting JARVIS.");
+            self.phase(Phase::Degraded, "Voice settings need attention.");
+            return;
+        }
+        self.settings_error = None;
+        let sensitivity = settings.sensitivity != self.settings.sensitivity;
+        let restart = sensitivity
+            || settings.enabled != self.settings.enabled
+            || settings.muted != self.settings.muted
+            || settings.input_device != self.settings.input_device
+            || settings.output_device != self.settings.output_device;
+        if restart {
+            self.halt();
+        }
+        self.settings = settings;
+        self.update(|s| s.settings = self.settings.clone());
+        if sensitivity {
+            self.wake = None;
+        }
+        self.failures = 0;
+        self.retry_at = Instant::now();
+    }
     fn run(mut self, commands: Receiver<Command>) {
         loop {
             for _ in 0..16 {
@@ -768,29 +812,7 @@ impl Worker {
                         return;
                     }
                     Ok(Command::Configure(settings)) => {
-                        if settings.validate().is_err() {
-                            continue;
-                        }
-                        if (self.save)(&settings).is_err() {
-                            self.phase(Phase::Degraded, "Voice settings could not be saved.");
-                            continue;
-                        }
-                        let sensitivity = settings.sensitivity != self.settings.sensitivity;
-                        let restart = sensitivity
-                            || settings.enabled != self.settings.enabled
-                            || settings.muted != self.settings.muted
-                            || settings.input_device != self.settings.input_device
-                            || settings.output_device != self.settings.output_device;
-                        if restart {
-                            self.halt();
-                        }
-                        self.settings = settings;
-                        self.update(|s| s.settings = self.settings.clone());
-                        if sensitivity {
-                            self.wake = None;
-                        }
-                        self.failures = 0;
-                        self.retry_at = Instant::now();
+                        self.configure(settings);
                     }
                     Ok(Command::Retry) => {
                         self.halt();
@@ -799,7 +821,7 @@ impl Worker {
                     }
                     Ok(Command::Clear) => self.update(|s| s.transcripts.clear()),
                     Ok(Command::Greet) => {
-                        if self.settings.greeting
+                        if (self.settings.greeting || self.settings.sound_cues)
                             && self
                                 .last_greeting
                                 .is_none_or(|t| t.elapsed() > Duration::from_secs(1800))
@@ -871,6 +893,43 @@ fn take_sentence(buffer: &mut String, finish: bool) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    async fn failed_settings_write_does_not_undo_mute_or_disable() {
+        for mute in [false, true] {
+            let settings = Settings {
+                enabled: true,
+                ..Default::default()
+            };
+            let status = Arc::new(Mutex::new(VoiceStatus::default()));
+            let active = Arc::new(AtomicBool::new(true));
+            let (credentials, _requests) = async_channel::channel(1);
+            let mut worker = Worker::new(
+                settings.clone(),
+                Arc::new(|_| Err("storage unavailable")),
+                credentials,
+                status.clone(),
+                Arc::new(AtomicBool::new(true)),
+                Arc::new(AtomicU64::new(0)),
+                active.clone(),
+                tokio::runtime::Handle::current(),
+            );
+            worker.configure(Settings {
+                enabled: mute,
+                muted: mute,
+                ..settings
+            });
+            assert!(!active.load(Ordering::Acquire));
+            assert!(!worker.settings.enabled || worker.settings.muted);
+            worker.phase(
+                if mute { Phase::Muted } else { Phase::Disabled },
+                "Microphone is off.",
+            );
+            let snapshot = status.lock().unwrap();
+            assert!(!snapshot.microphone);
+            assert!(!snapshot.settings.enabled || snapshot.settings.muted);
+            assert!(snapshot.message.contains("could not be saved"));
+        }
+    }
     #[test]
     fn speech_chunks_preserve_unicode_and_limits() {
         let original = "Good afternoon, Sir. How may I help? ".repeat(50);

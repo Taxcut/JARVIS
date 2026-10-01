@@ -89,3 +89,9 @@ changes; voice/UI styling adds no authority. Small 16px and platform tray varian
 180px Apple Touch and 192/512px manifest assets are generated from approved or
 explicitly derived original artwork. Six settled visual comparisons passed with
 zero changed pixels before the microphone follow-up.
+
+Keyboard/browser follow-up: Settings is reachable with Tab/Enter. Off startup,
+Low power and Reduce motion persisted through a real browser reload; the DOM
+reported reduced motion active and no boot overlay appeared. Restored the original
+Full/High/motion defaults afterward. These are browser preference checks; they do
+not claim native physical voice or operating-system accessibility certification.
