@@ -26,8 +26,19 @@ struct Asset {
     sha256: String,
 }
 pub fn verify(root: &Path) -> Result<(), &'static str> {
-    let manifest: Vec<Asset> = serde_json::from_str(include_str!("../models.json"))
-        .map_err(|_| "Voice asset manifest is invalid")?;
+    verify_manifest(root, include_str!("../models.json"))
+}
+pub fn stt_root() -> Result<PathBuf, &'static str> {
+    Ok(model_root()?.with_file_name("stt"))
+}
+pub fn verify_stt(root: &Path) -> Result<(), &'static str> {
+    verify_manifest(root, include_str!("../stt-models.json")).map_err(|_| {
+        "Local speech recognition models are missing or damaged. Run voice:stt-models."
+    })
+}
+fn verify_manifest(root: &Path, raw: &str) -> Result<(), &'static str> {
+    let manifest: Vec<Asset> =
+        serde_json::from_str(raw).map_err(|_| "Voice asset manifest is invalid")?;
     for asset in manifest {
         let p = root.join(asset.path);
         let mut cursor = p.as_path();

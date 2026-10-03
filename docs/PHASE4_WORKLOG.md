@@ -190,3 +190,41 @@ pnpm junction policy. No Windows physical voice success is claimed.
 Next: implement pinned streaming STT and a bounded local conversation adapter,
 benchmark Qwen on this 8 GB Mac, update setup/privacy/readiness, then rerun the
 changed-stack gates and physical acceptance. Do not merge PR #4.
+
+## Local stack implementation checkpoint — 2026-10-02
+
+Implemented streaming int8 English Zipformer STT, fixed-loopback Ollama adapter,
+pinned Qwen3 4B Instruct Q4_K_M and local sentence-first Kokoro. The retained cloud
+broker/adapter is never selected by the default worker. Capture/security authority
+is unchanged. Local model streams are bounded and generation-tagged; interrupted
+assistant text is excluded from subsequent history. Clear conversation drops the
+model session as well as UI transcript. The spoken stop path now uses the same
+fail-closed settings persistence path as the mute/off controls.
+
+Explicit setup verifies Ollama 0.35.1 platform archives, Qwen manifest and every
+local model layer. STT gets a separate pinned manifest and staged installer.
+Missing/loading/ready/degraded/error model status is typed through IPC. A fixed
+verified local runtime may restart on demand, with no arbitrary process/URL/model
+argument exposed to the frontend. Model inference is lazy, bounded to 2048 context,
+192 output tokens, one concurrent model and a two-minute idle retention.
+
+Synthetic measurement (Mac, 8 GB): STT model load 1167 ms; 3602 ms arithmetic
+fixture decoded in 133 ms, first partial at 780 ms of audio. Actual recognition was
+“what is too plus two”. Qwen received that text and answered four, but added a
+clarification; do not claim perfect transcription/persona. First token 1164 ms,
+first sentence synthesis 3528 ms for 2665 ms output, first sentence ready 5710 ms
+after STT. Earlier cold first-token samples were roughly 3.7–4.9 seconds; Ollama
+reported 2865674321 bytes of model memory at 2048 context. This is not yet physical
+wake-to-answer latency or voice-quality acceptance. Whole-answer TTS had been
+slower; the new probe exercises the same sentence splitting as the controller.
+
+Verification: 50 TypeScript tests and static/build gates, 19 isolated PostgreSQL
+integration tests, full workspace Clippy and 33 Mac Rust tests passed (17 voice,
+6 identity, 10 runtime; one physical secure-store test intentionally ignored).
+The new cancellation regression rejects stale local tokens and never marks cloud
+audio active. Synthetic local inference needs no paid provider. Remaining: build
+and install this checkpoint, owner-only protected approvals/physical conversation,
+Windows local-stack checks, expanded visual/product/accessibility/performance
+acceptance and final security/CI. The Gaming PC became reachable again; no OS
+security protection was changed. The owner may sleep; do not require a password or
+block independent work while waiting for their return.

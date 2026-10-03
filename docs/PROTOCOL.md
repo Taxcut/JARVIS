@@ -75,7 +75,7 @@ The local IPC protocol is length-prefixed JSON, maximum 16 KiB, with a closed co
 ## Phase 4 voice protocol
 
 Runtime protocol 2 is required for voice; older helpers are update-required.
-`POST /api/v1/voice/session` accepts only an empty strict object under a signed
+The retained optional-cloud `POST /api/v1/voice/session` accepts only an empty strict object under a signed
 current runtime session. NORMAL device/owner state is rechecked after upstream
 issuance. The response contains version 1, short-lived value, Unix-second expiry,
 allowlisted model, correlation ID and `executionAvailable: false`. Native consumes
@@ -89,3 +89,10 @@ The private IPC command allowlist adds voice configure/retry/clear/greet. Settin
 are Zod/Rust validated; the 16 KiB reply limit is unchanged. Shared schemas live in
 `packages/protocol/src/voice.ts`. Global setup remains incomplete; voice device
 setup and physical acceptance must not be inferred from Core health.
+
+The local-default runtime does not call the cloud broker. Voice status adds
+`sttReady`, `localModel` (NOT_LOADED/NOT_INSTALLED/LOADING/READY/DEGRADED/ERROR) and
+`lastFirstTokenMs`; default `cloudAudio` remains false. `providerConnected` refers
+to the current local conversation adapter, not Internet reachability. Model
+results never enter Core audit/sync payloads. Local model requests accept bounded
+text only at a fixed loopback endpoint, have no tools and confer no authority.

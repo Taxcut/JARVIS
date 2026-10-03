@@ -2,12 +2,11 @@
 use crate::{
     audio::Audio,
     models::{self, Kokoro, VoiceEngine},
-    provider::{self, Credential, Event, Input},
+    provider::{Credential, Event},
     Phase, Settings, VoiceStatus, WakeGate,
 };
 use chrono::Timelike;
 use std::{
-    collections::VecDeque,
     path::PathBuf,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
@@ -157,7 +156,7 @@ fn speech_worker(
     (tx, result)
 }
 struct Connection {
-    input: async_channel::Sender<Input>,
+    input: async_channel::Sender<crate::local::Turn>,
     interrupt: async_channel::Sender<()>,
     events: async_channel::Receiver<Event>,
     task: tokio::task::JoinHandle<()>,
@@ -171,7 +170,7 @@ struct Worker {
     settings: Settings,
     settings_error: Option<&'static str>,
     save: Save,
-    credentials: async_channel::Sender<CredentialRequest>,
+    _credentials: async_channel::Sender<CredentialRequest>,
     status: Arc<Mutex<VoiceStatus>>,
     authority: Arc<AtomicBool>,
     epoch: Arc<AtomicU64>,
@@ -184,9 +183,10 @@ struct Worker {
     speech: Option<SyncSender<SpeechJob>>,
     speech_result: Option<Receiver<SpeechResult>>,
     connection: Option<Connection>,
-    pending: Option<oneshot::Receiver<Result<Credential, &'static str>>>,
-    buffer: VecDeque<f32>,
-    upload: Vec<f32>,
+    stt: Option<crate::stt::Recognizer>,
+    stt_item: String,
+    stt_partial: bool,
+    model_check: Option<oneshot::Receiver<Result<(), (crate::ModelState, &'static str)>>>,
     text: String,
     sentence: String,
     response_id: String,
@@ -220,7 +220,7 @@ impl Worker {
             settings,
             settings_error: None,
             save,
-            credentials,
+            _credentials: credentials,
             status,
             authority,
             epoch,
@@ -233,9 +233,10 @@ impl Worker {
             speech: None,
             speech_result: None,
             connection: None,
-            pending: None,
-            buffer: VecDeque::new(),
-            upload: Vec::new(),
+            stt: None,
+            stt_item: uuid::Uuid::new_v4().to_string(),
+            stt_partial: false,
+            model_check: None,
             text: String::new(),
             sentence: String::new(),
             response_id: String::new(),
@@ -290,8 +291,10 @@ impl Worker {
     fn close(&mut self) {
         self.cancel();
         self.connection = None;
-        self.pending = None;
-        self.buffer.clear();
+        if let Some(stt) = self.stt.as_mut() {
+            stt.reset();
+        }
+        self.stt_partial = false;
         self.tail.clear();
         self.stream = self.wake.as_ref().map(|w| w.create_stream());
         self.stop_stream = self
@@ -299,10 +302,15 @@ impl Worker {
             .as_ref()
             .map(|w| w.create_stream_with_keywords(include_str!("../stop-keywords.txt")));
         self.stream_started = Instant::now();
-        self.upload.clear();
         self.update(|s| {
             s.provider_connected = false;
             s.cloud_audio = false;
+            if matches!(
+                s.local_model,
+                crate::ModelState::Ready | crate::ModelState::Loading
+            ) {
+                s.local_model = crate::ModelState::NotLoaded;
+            }
         });
     }
     fn halt(&mut self) {
@@ -344,6 +352,13 @@ impl Worker {
             self.retry_at = Instant::now() + Duration::from_millis(250);
             return Ok(());
         }
+        if self.model_check.is_none() {
+            let (tx, rx) = oneshot::channel();
+            self.model_check = Some(rx);
+            self.handle.spawn(async move {
+                let _ = tx.send(crate::local::installed().await);
+            });
+        }
         self.phase(
             Phase::Starting,
             "Preparing local wake detection and British voice…",
@@ -358,6 +373,10 @@ impl Worker {
                 self.speech_result = Some(result);
             }
             self.update(|s| s.wake_ready = true);
+        }
+        if self.stt.is_none() {
+            self.stt = Some(crate::stt::Recognizer::load(&models::stt_root()?)?);
+            self.update(|s| s.stt_ready = true);
         }
         if !self.authority.load(Ordering::Acquire) {
             return Ok(());
@@ -415,39 +434,90 @@ impl Worker {
         Ok(())
     }
     fn begin(&mut self) {
-        if self.connection.is_some() || self.pending.is_some() {
+        if self.connection.is_some() || self.stt.is_none() {
             return;
         }
         self.woken = Instant::now();
         self.first_audio = false;
         self.suppress_response = false;
-        self.buffer.clear();
-        let (reply, pending) = oneshot::channel();
-        if self
-            .credentials
-            .try_send(CredentialRequest { reply })
-            .is_err()
-        {
-            self.phase(
-                Phase::Degraded,
-                "Voice authorization is busy. Please try again.",
-            );
-            return;
+        if let Some(stt) = self.stt.as_mut() {
+            stt.reset();
         }
-        self.pending = Some(pending);
+        self.stt_item = uuid::Uuid::new_v4().to_string();
+        self.stt_partial = false;
+        let (input, rx) = async_channel::channel(2);
+        let (events, out) = async_channel::channel(64);
+        let (interrupt, signals) = async_channel::channel(1);
+        let task = self
+            .handle
+            .spawn(crate::local::run(rx, events, signals, self.active.clone()));
+        self.connection = Some(Connection {
+            input,
+            interrupt,
+            events: out,
+            task,
+        });
         self.update(|s| {
             s.wake_count = s.wake_count.saturating_add(1);
             s.last_wake = Some(chrono::Utc::now().to_rfc3339());
+            s.cloud_audio = false;
         });
         let _ = self.cue(crate::cues::Cue::Wake);
-        self.phase(Phase::Listening, "I’m listening, Sir.");
+        self.phase(Phase::Listening, "I’m listening locally, Sir.");
+    }
+    fn transcribe(&mut self, frame: &[f32]) -> Result<(), &'static str> {
+        if self.connection.is_none() {
+            return Ok(());
+        }
+        let update = self
+            .stt
+            .as_mut()
+            .ok_or("Local speech recognition is unavailable")?
+            .feed(frame)?;
+        if let Some(update) = update {
+            if !self.stt_partial {
+                self.stt_partial = true;
+                self.provider_event(Event::SpeechStarted)?;
+            }
+            let id = self.stt_item.clone();
+            self.provider_event(Event::User(id, update.text.clone(), update.final_text))?;
+            if update.final_text {
+                self.stt_partial = false;
+                self.stt_item = uuid::Uuid::new_v4().to_string();
+                if self.connection.is_some() {
+                    // A newer owner turn replaces outstanding model output, including
+                    // when it has not produced its first token yet.
+                    self.cancel();
+                    self.provider_event(Event::SpeechStopped)?;
+                    self.woken = Instant::now();
+                    self.first_audio = false;
+                    self.connection
+                        .as_ref()
+                        .unwrap()
+                        .input
+                        .try_send(crate::local::Turn {
+                            text: update.text,
+                            generation: self.epoch.load(Ordering::Acquire),
+                        })
+                        .map_err(|_| "Local conversation is busy. Please try again.")?;
+                }
+            }
+        }
+        Ok(())
     }
     fn provider_event(&mut self, event: Event) -> Result<(), &'static str> {
         match event {
+            Event::Generation(generation, event) => {
+                if generation == self.epoch.load(Ordering::Acquire) {
+                    self.provider_event(*event)?;
+                }
+            }
+            Event::Model(state) => self.update(|s| s.local_model = state),
+            Event::FirstToken(ms) => self.update(|s| s.last_first_token_ms = Some(ms)),
             Event::Connected => {
                 self.update(|s| {
                     s.provider_connected = true;
-                    s.cloud_audio = true;
+                    s.cloud_audio = false;
                 });
                 self.cue(crate::cues::Cue::Listening)?;
             }
@@ -468,10 +538,10 @@ impl Worker {
                     .replace([',', '.', '!'], "")
                     .contains("jarvis stop listening")
                 {
-                    self.settings.enabled = false;
-                    (self.save)(&self.settings)?;
-                    self.halt();
-                    self.update(|s| s.settings = self.settings.clone());
+                    self.configure(Settings {
+                        enabled: false,
+                        ..self.settings.clone()
+                    });
                     self.phase(
                         Phase::Disabled,
                         "Listening stopped. Turn voice on when you’re ready.",
@@ -520,50 +590,17 @@ impl Worker {
         Ok(())
     }
     fn tick(&mut self) -> Result<(), &'static str> {
-        if let Some(pending) = self.pending.as_mut() {
-            match pending.try_recv() {
-                Ok(Ok(credential)) => {
-                    let (tx, rx) = async_channel::channel(128);
-                    let (events, out) = async_channel::channel(64);
-                    let (interrupt, signals) = async_channel::channel(1);
-                    let task = self.handle.spawn(provider::run(
-                        credential,
-                        rx,
-                        events,
-                        signals,
-                        self.active.clone(),
-                    ));
-                    self.connection = Some(Connection {
-                        input: tx,
-                        interrupt,
-                        events: out,
-                        task,
-                    });
-                    self.pending = None;
-                    while !self.buffer.is_empty() {
-                        let n = self.buffer.len().min(960);
-                        let samples = self.buffer.drain(..n).collect();
-                        self.connection
-                            .as_ref()
-                            .unwrap()
-                            .input
-                            .try_send(Input::Audio(samples))
-                            .map_err(|_| "Voice input queue is full")?;
-                    }
+        if let Some(check) = self.model_check.as_mut() {
+            match check.try_recv() {
+                Ok(Err((state, message))) => {
+                    self.model_check = None;
+                    self.update(|s| s.local_model = state);
+                    self.phase(Phase::Degraded, message);
                 }
-                Ok(Err(e)) => {
-                    self.close();
-                    self.cue(crate::cues::Cue::Alert)?;
-                    self.phase(Phase::Degraded, e);
+                Ok(Ok(())) | Err(oneshot::error::TryRecvError::Closed) => {
+                    self.model_check = None;
                 }
-                Err(oneshot::error::TryRecvError::Closed) => {
-                    return Err("Voice authorization was interrupted")
-                }
-                Err(oneshot::error::TryRecvError::Empty) => {
-                    if self.woken.elapsed() > Duration::from_secs(8) {
-                        return Err("Voice authorization timed out");
-                    }
-                }
+                Err(oneshot::error::TryRecvError::Empty) => {}
             }
         }
         for _ in 0..64 {
@@ -614,7 +651,6 @@ impl Worker {
         if self.greet_pending
             && self.status.lock().is_ok_and(|s| s.tts_ready)
             && self.connection.is_none()
-            && self.pending.is_none()
             && self.status.lock().is_ok_and(|s| s.input_level < 0.012)
             && self.voiced == 0
         {
@@ -714,32 +750,19 @@ impl Worker {
                 }
             }
             if keyword.as_deref() == Some("Stop listening") {
-                self.settings.enabled = false;
-                (self.save)(&self.settings)?;
-                self.halt();
-                self.update(|s| s.settings = self.settings.clone());
+                self.configure(Settings {
+                    enabled: false,
+                    ..self.settings.clone()
+                });
                 self.phase(
                     Phase::Disabled,
                     "Listening stopped. Turn voice on when you’re ready.",
                 );
                 break;
             }
-            let recording = self.pending.is_some() || self.connection.is_some();
+            let recording = self.connection.is_some();
             if recording {
-                if self.pending.is_some() {
-                    self.buffer.extend(frame);
-                    if self.buffer.len() > 16000 * 7 {
-                        return Err("Voice authorization took too long; audio discarded");
-                    }
-                } else if let Some(c) = &self.connection {
-                    self.upload.extend(frame);
-                    if self.upload.len() >= 960 {
-                        let data = std::mem::take(&mut self.upload);
-                        c.input
-                            .try_send(Input::Audio(data))
-                            .map_err(|_| "Voice upload fell behind; audio discarded")?;
-                    }
-                }
+                self.transcribe(&frame)?;
             }
             if let Some(phrase) = keyword {
                 if self.gate.accept(
@@ -748,9 +771,10 @@ impl Worker {
                     !recording && queued == 0 && self.pending_speech == 0,
                 ) {
                     self.begin();
-                    if self.pending.is_some() {
+                    if self.connection.is_some() {
                         if let Some((start, last)) = wake_end {
-                            self.buffer.extend(self.tail.after(start, last));
+                            let tail = self.tail.after(start, last);
+                            self.transcribe(&tail)?;
                         }
                     }
                 }
@@ -819,7 +843,16 @@ impl Worker {
                         self.failures = 0;
                         self.retry_at = Instant::now();
                     }
-                    Ok(Command::Clear) => self.update(|s| s.transcripts.clear()),
+                    Ok(Command::Clear) => {
+                        self.close();
+                        self.update(|s| s.transcripts.clear());
+                        if self.audio.is_some() {
+                            self.phase(
+                                Phase::WakeOnly,
+                                "Conversation cleared. Listening locally for Jarvis.",
+                            );
+                        }
+                    }
                     Ok(Command::Greet) => {
                         if (self.settings.greeting || self.settings.sound_cues)
                             && self
@@ -836,7 +869,7 @@ impl Worker {
                 || self.settings.muted
                 || !self.authority.load(Ordering::Acquire)
             {
-                if self.audio.is_some() || self.connection.is_some() || self.pending.is_some() {
+                if self.audio.is_some() || self.connection.is_some() {
                     self.halt();
                 }
                 if !self.settings.enabled {
@@ -868,7 +901,7 @@ impl Worker {
     }
 }
 /// Split at sentence punctuation or a bounded whitespace boundary, preserving UTF-8.
-fn take_sentence(buffer: &mut String, finish: bool) -> Option<String> {
+pub fn take_sentence(buffer: &mut String, finish: bool) -> Option<String> {
     if buffer.is_empty() {
         return None;
     }
@@ -929,6 +962,38 @@ mod tests {
             assert!(!snapshot.settings.enabled || snapshot.settings.muted);
             assert!(snapshot.message.contains("could not be saved"));
         }
+    }
+    #[tokio::test]
+    async fn cancelled_local_tokens_cannot_resume_speech_or_transcript() {
+        let status = Arc::new(Mutex::new(VoiceStatus::default()));
+        let (credentials, mut requests) = async_channel::channel(1);
+        let mut worker = Worker::new(
+            Settings::default(),
+            Arc::new(|_| Ok(())),
+            credentials,
+            status.clone(),
+            Arc::new(AtomicBool::new(true)),
+            Arc::new(AtomicU64::new(7)),
+            Arc::new(AtomicBool::new(true)),
+            tokio::runtime::Handle::current(),
+        );
+        worker
+            .provider_event(Event::Generation(
+                6,
+                Box::new(Event::Delta("old".into(), "Must not speak.".into())),
+            ))
+            .unwrap();
+        worker
+            .provider_event(Event::Generation(
+                6,
+                Box::new(Event::Done("old".into(), "Must not speak.".into())),
+            ))
+            .unwrap();
+        assert!(status.lock().unwrap().transcripts.is_empty());
+        assert_eq!(worker.pending_speech, 0);
+        assert!(requests.try_recv().is_err());
+        worker.provider_event(Event::Connected).unwrap();
+        assert!(!status.lock().unwrap().cloud_audio);
     }
     #[test]
     fn speech_chunks_preserve_unicode_and_limits() {

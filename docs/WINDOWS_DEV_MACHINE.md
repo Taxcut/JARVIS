@@ -166,3 +166,13 @@ RedirectionGuard diagnostic and trusted-link recovery procedure. No SAC, Defende
 UAC or RedirectionGuard setting was weakened. This is not a local TypeScript pass.
 Additional native application/model checks and physical Windows enrollment/audio
 acceptance remain explicitly pending. Do not import the Mac identity to Windows.
+
+### Phase 4 local voice continuation
+
+The 2026-10-02 local default requires sherpa streaming STT and pinned local Qwen
+in addition to existing wake/Kokoro. `pnpm voice:local-setup` supports the pinned
+Windows x64 Ollama archive, loopback-only service and the same Qwen digest; it
+never changes Defender, Firewall, Smart App Control or RedirectionGuard. Existing
+9a242d3 native build/28-test evidence predates this change. Updated Windows local
+inference and native build validation remain pending; physical microphone and
+owner enrollment are separate. Remote availability has resumed.

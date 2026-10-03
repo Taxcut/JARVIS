@@ -36,13 +36,23 @@ Keychain and the microphone dialog; native status then showed GRANTED, nonzero
 input, wake/TTS models ready and ONLINE. Spoken stop, conversation and barge-in
 acceptance remain pending. Voice is now deliberately off during the local migration.
 
-The owner superseded the cloud-default design on 2026-10-02: default voice must
-use local sherpa streaming STT, local Qwen3 4B Instruct-class conversation and
-Kokoro. The historical OpenAI `credit_balance_exhausted` result is **not a Phase 4
-blocker** and no purchase is required. Local STT/Qwen integration and physical
-conversation/barge-in acceptance are pending. Original Prompt #4 requirements
-remain in scope except where this explicit local-default decision supersedes them. See
-[PHASE4_WORKLOG](PHASE4_WORKLOG.md), [VOICE](VOICE.md) and [DESIGN](DESIGN.md).
+The owner superseded the cloud-default design on 2026-10-02. Default voice now
+uses local sherpa streaming STT → local pinned Qwen3 4B Instruct via Ollama →
+Kokoro. No paid API is required; the historical cloud credit error is not a blocker.
+The local synthetic pipeline passed, including streamed text and first-sentence
+synthesis. Latest sample: STT load 1.17 s, decode 133 ms for 3.6 s of audio, first
+partial at 780 ms of audio; Qwen first token 1.16 s and first sentence ready for
+playback 5.71 s after STT. These are synthetic measurements, not live conversational
+acceptance. The recognized homophone “too” instead of “two” was sent unchanged to
+Qwen; accuracy and overly cautious wording still need a real owner review.
+
+The changed stack passes 50 TypeScript tests/static/build checks, 19 isolated
+PostgreSQL integration tests, workspace Clippy and 33 native tests (17 voice;
+one separate physical credential-store test remains ignored). New source needs
+fresh hosted CI and a new installed native build. All original Prompt #4 gates
+remain applicable unless explicitly superseded by the local-default decision.
+See [PHASE4_ACCEPTANCE](PHASE4_ACCEPTANCE.md) for open work. The owner is asleep;
+protected OS approvals and physical spoken checks may wait until they return.
 
 # Implementation status
 

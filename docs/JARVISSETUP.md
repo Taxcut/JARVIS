@@ -143,24 +143,22 @@ For uninstall: disable login startup, stop runtime, quit the dashboard, then rem
 This supersedes earlier instructions that classify voice as future-only. Preserve
 existing owner identity, database, recovery codes and native secure storage.
 
-1. Keep the provider key in the Core's private `OPENAI_API_KEY`; never enter it in
-   the UI. The default `JARVIS_REALTIME_MODEL` is `gpt-realtime-2.1`. API credit is
-   separate from ChatGPT/model usage subscriptions.
-2. Run `pnpm runtime:prepare --release`, then `pnpm voice:models` on the device that
-   will run voice. Fixed model/native archives are integrity-checked. Models are
-   local user data, not frontend assets or Git content.
-3. Build/open the native app, connect its trusted background runtime, and select
-   the microphone/speaker in Settings. Choose visual quality and motion/startup
-   preferences. Browser preview cannot claim native microphone readiness.
-4. Enable voice deliberately. Approve the operating-system microphone dialog if
-   requested. Permission denial stops automatic retries; correct OS access, then
-   choose Reconnect audio. Device loss is shown explicitly.
-5. Test Jarvis, Hey Jarvis, immediate follow-on speech, George output, interruption,
-   mute and “Jarvis, stop listening.” Wake-only audio stays local; an active
-   conversation sends audio to OpenAI. Transcripts are transient and clearable.
-6. Confirm real provider response, restart/resume and sleep/wake before treating
-   voice as accepted. Missing models, exhausted provider credit or unperformed
-   physical checks must remain incomplete.
+1. Run `pnpm voice:models`, `pnpm voice:stt-models` and
+   `pnpm voice:local-setup`. These explicitly verify/install wake, Kokoro, streaming
+   STT, Ollama and the pinned Qwen model in local user storage. Allow about 4 GB of
+   storage for active dependencies/models plus retained verified setup archives.
+   No OpenAI key or payment is required. Models are never tracked in Git.
+2. Run `pnpm voice:local-probe` to check the fixed synthetic local pipeline and
+   print measured timings. This is not physical microphone acceptance.
+3. Build/open the native app, connect the trusted runtime, select input/output,
+   and enable voice deliberately. Approve the OS microphone request if shown.
+4. Check real Jarvis/Hey Jarvis, immediate questions, partial/final transcripts,
+   Qwen responses, George output, interruption, mute and stop-listening. The
+   default conversation is processed locally; Core still supplies security state.
+5. Verify restart/resume/sleep/wake and model/device failure recovery. Missing
+   models or unperformed physical checks remain incomplete. The local model
+   runtime starts/restarts only from its fixed verified installation. It uses
+   loopback only, no cloud fallback, and unloads idle weights after two minutes.
 
 For local Mac validation the signed application bundle is built with
 `pnpm runtime:prepare --release && pnpm --filter @jarvis/desktop tauri build --bundles app`.
@@ -178,9 +176,9 @@ staging directory and retains the previous model directory for recovery.
 
 ### Local-default transition (2026-10-02)
 
-The owner superseded the OpenAI-default instructions above: paid API credit is
-**not required** for Prompt #4. Local streaming STT and Qwen setup are being
-integrated; keep voice off until the local stack is installed and verified.
+The owner superseded the historical OpenAI default: paid API credit is
+**not required** for Prompt #4. Local streaming STT and Qwen setup are implemented; keep voice off until the
+local stack is installed and verified.
 Kokoro and wake models remain local. Historical provider setup is optional only.
 After building a Mac app, run `pnpm desktop:verify-macos` before installation.
 This checks the final desktop/helper audio-input entitlements, hardened-runtime

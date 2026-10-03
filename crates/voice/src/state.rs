@@ -66,6 +66,16 @@ pub enum Phase {
     Lockdown,
     Suspended,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ModelState {
+    NotLoaded,
+    NotInstalled,
+    Loading,
+    Ready,
+    Degraded,
+    Error,
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Transcript {
@@ -85,6 +95,9 @@ pub struct VoiceStatus {
     pub cloud_audio: bool,
     pub wake_ready: bool,
     pub tts_ready: bool,
+    pub stt_ready: bool,
+    pub local_model: ModelState,
+    pub last_first_token_ms: Option<u64>,
     pub provider_connected: bool,
     pub permission: String,
     pub message: String,
@@ -108,6 +121,9 @@ impl Default for VoiceStatus {
             cloud_audio: false,
             wake_ready: false,
             tts_ready: false,
+            stt_ready: false,
+            local_model: ModelState::NotLoaded,
+            last_first_token_ms: None,
             provider_connected: false,
             permission: "NOT_REQUESTED".into(),
             message: "Voice is off. Enable it to set up local wake detection.".into(),

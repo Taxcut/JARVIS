@@ -4,7 +4,10 @@ pub use state::*;
 pub mod audio;
 pub mod models;
 
+pub mod local;
+mod local_runtime;
 pub mod provider;
+pub mod stt;
 
 pub mod controller;
 

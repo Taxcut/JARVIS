@@ -49,6 +49,9 @@ pub enum Input {
     Audio(Vec<f32>),
 }
 pub enum Event {
+    Generation(u64, Box<Event>),
+    Model(crate::ModelState),
+    FirstToken(u64),
     Connected,
     SpeechStarted,
     SpeechStopped,

@@ -118,9 +118,11 @@ export function VoiceExperience({
           <span>AUDIO CHANNEL</span>
           <b>
             {status?.cloudAudio
-              ? 'CONVERSATION ACTIVE'
+              ? 'CLOUD CONVERSATION'
               : status?.microphone
-                ? 'LOCAL WAKE ONLY'
+                ? status.providerConnected
+                  ? 'LOCAL CONVERSATION'
+                  : 'LOCAL WAKE ONLY'
                 : 'MICROPHONE OFF'}
           </b>
         </div>
@@ -187,7 +189,7 @@ export function VoiceExperience({
         {status?.cloudAudio
           ? 'Conversation audio is sent to OpenAI. Speech is generated locally.'
           : status?.microphone
-            ? 'Wake detection stays on this device. No audio is being sent online.'
+            ? 'Voice processing stays on this device: wake, transcription, conversation and speech.'
             : 'Your microphone is off. No audio is being captured.'}
       </p>
       <Notice message={voice.error} />
@@ -271,9 +273,27 @@ export function VoiceSettings({ voice }: { voice: Voice }) {
       <div className="eyebrow">VOICE & PRESENCE</div>
       <h2>A voice that feels familiar.</h2>
       <p>
-        British English · Kokoro · George. Speech stays local. Conversation uses
-        OpenAI after you wake JARVIS.
+        British English · Kokoro · George. Wake detection, transcription and
+        Qwen conversation run locally. No paid voice API is required.
       </p>
+      {voice.status && (
+        <p className="hint" role="status">
+          Speech recognition: {voice.status.sttReady ? 'Ready' : 'Not loaded'} ·
+          Local Qwen:{' '}
+          {
+            (
+              {
+                NOT_LOADED: 'Loads on your next turn',
+                NOT_INSTALLED: 'Model not installed',
+                LOADING: 'Loading',
+                READY: 'Ready',
+                DEGRADED: 'Needs attention',
+                ERROR: 'Setup needs attention',
+              } as const
+            )[voice.status.localModel]
+          }
+        </p>
+      )}
       {s ? (
         <div className="settings-grid">
           <label>

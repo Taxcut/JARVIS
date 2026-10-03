@@ -36,7 +36,7 @@ A single bounded minute maintenance task expires security records, clears challe
 
 ## Preserved future boundaries
 
-- Voice: local **sherpa-onnx**, wake arbitration and OpenAI Realtime conversation, with a separate planned Kokoro synthesis adapter for the owner-selected `bm_george` output; documentation only in this phase. See VOICE and OWNER_CONFIGURATION.
+- Voice: local **sherpa-onnx** wake and streaming STT, Qwen3 4B Instruct through local Ollama, and Kokoro `bm_george`; implemented on the Phase 4 branch and still in physical validation. See VOICE and OWNER_CONFIGURATION.
 - Remote: native capture/encoding/secure transport; no implementation.
 - Computer control: future native APIs, Accessibility/UI Automation and narrowly authorized tool adapters. No privileged IPC exists today.
 - Browser automation, LiveKit/Twilio phone/SMS, semantic memory/pgvector, missions and automations remain separate later work.
@@ -49,10 +49,11 @@ Closing the desktop stops neither the independent runtime nor separately started
 The prior planned-only voice boundary is now implemented behind `crates/voice`.
 The existing per-user runtime owns CPAL audio, sherpa-onnx wake detection, Sonora
 echo cancellation and local Kokoro synthesis. Model work runs outside callbacks;
-provider networking is asynchronous and credentials are delegated through the
-existing serialized scoped runtime client. React can configure declared settings
+local model I/O is asynchronous through a fixed loopback adapter. The retained
+optional cloud broker is not invoked by the default runtime. React can configure declared settings
 and observe bounded local status; it receives neither provider keys nor microphone
-samples. The Core remains the credential broker and security authority. No database
+samples. Core remains the current security authority; local conversation does not bypass
+its ONLINE/NORMAL requirement. Optional cloud code retains its credential broker. No database
 migration or operational fixtures are introduced by voice.
 
 Native output telemetry drives the procedural Three.js presence. Rendering stops

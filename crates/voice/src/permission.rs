@@ -13,7 +13,7 @@ pub fn ready() -> Result<bool, &'static str> {
             AVAuthorizationStatus::Authorized => Ok(true),
             AVAuthorizationStatus::NotDetermined => {
                 if REFUSED.load(Ordering::Acquire) {
-                    return Err("macOS could not grant microphone access. Reopen the installed JARVIS app and check System Settings → Privacy & Security → Microphone.");
+                    return Err("Microphone permission could not be granted by macOS. Reopen the installed JARVIS app and check System Settings → Privacy & Security → Microphone.");
                 }
                 if !REQUESTED.swap(true, Ordering::AcqRel) {
                     let done = block2::RcBlock::new(|granted: objc2::runtime::Bool| {

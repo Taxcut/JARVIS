@@ -81,8 +81,8 @@ native action dispatcher, shell/file API or privileged tool. Core issues voice
 credentials only to the scoped runtime; React sees bounded status and transcript
 text, rendered as text rather than HTML. Provider credentials never enter React.
 
-Pre-wake audio stays local. Timestamp-limited post-keyword recovery avoids uploading
-ambient pre-roll, but false wake detection may expose subsequent speech to OpenAI.
+Pre-wake audio stays local. Timestamp-limited post-keyword recovery feeds local STT. Default voice sends no
+audio to a cloud provider; false wakes may still trigger unwanted local turns.
 No speaker biometric authentication is implied. Capture/output and provider queues
 are bounded; mute/disable/revocation/suspend fence new capture, playback and queued
 network packets. A packet already sent cannot be revoked. Sessions expire locally;
@@ -104,8 +104,7 @@ system crash dumps/debuggers are a residual local-access risk, not an applicatio
 privacy guarantee. Six bounded transcript entries are memory-only. Settings contain
 no secrets. Tests and visual fixtures use isolated constant input only.
 
-Pending: real Mac wake/noise/barge-in/lifecycle acceptance, provider retry after
-owner billing correction and Windows physical privacy/voice checks. Automated
+Pending: real Mac wake/noise/barge-in/lifecycle acceptance, local STT/Qwen end-to-end acceptance and Windows physical privacy/voice checks. Automated
 passing tests do not close those requirements. See VOICE and IMPLEMENTATION_STATUS.
 
 Phase 4 microphone follow-up: macOS capture is gated by AVFoundation audio
@@ -130,3 +129,14 @@ is local. Microphone packaging now includes the narrow signed audio-input
 entitlement in both native executables; hardened runtime remains enabled. The
 owner approved microphone access, and nonzero input was verified without storing
 audio or reading private transcripts. Physical stop/barge-in tests remain open.
+
+Local inference boundary: only pinned Qwen text inference at 127.0.0.1:11434 is
+used by default, with proxies/redirects disabled, no tools and bounded NDJSON,
+text, history and generation duration. Setup verifies release/archive/model-layer
+digests. A fixed per-user installed runtime can be restarted without exposing a
+process-launch command to React/IPC. The local service has no cross-user
+authentication enclave; same-user/administrator compromise is outside this
+boundary. Voice prompt injection cannot change policy or trigger execution.
+Cancellation epochs reject stale local model events as well as old TTS output.
+Clearing conversation drops local model history and visible transcript; transient
+model/GPU caches are not represented as securely zeroized memory.

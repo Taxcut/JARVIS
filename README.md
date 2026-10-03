@@ -53,3 +53,8 @@ Phase 4 voice/presence is under validation on its feature branch. See
 [IMPLEMENTATION_STATUS](docs/IMPLEMENTATION_STATUS.md) for current architecture,
 setup, verified checkpoints and remaining physical acceptance. Conversation does
 not grant computer execution; fresh installs contain no operational demo data.
+
+Phase 4 voice now defaults to local sherpa streaming STT, pinned Qwen3 4B
+Instruct via Ollama, and Kokoro bm_george. No paid API is required. Setup and
+resource limits are in [VOICE](docs/VOICE.md) and [JARVISSETUP](docs/JARVISSETUP.md).
+Physical acceptance is still open; this is not a completion claim.

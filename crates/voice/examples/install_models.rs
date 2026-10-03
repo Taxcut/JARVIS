@@ -29,7 +29,7 @@ fn install(
             break;
         }
         total += n;
-        if total > 200 * 1024 * 1024 {
+        if total > 400 * 1024 * 1024 {
             return Err("Model archive exceeded its size limit".into());
         }
         hash.update(&buffer[..n]);
@@ -50,7 +50,7 @@ fn install(
             return Err("Model archive contained a non-regular entry".into());
         }
         size += entry.size();
-        if size > 700 * 1024 * 1024 {
+        if size > 1000 * 1024 * 1024 {
             return Err("Extracted model exceeded its limit".into());
         }
         if !entry.unpack_in(root)? {
@@ -62,7 +62,17 @@ fn install(
     Ok(())
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = jarvis_voice::models::model_root()?;
+    let stt = std::env::args().any(|arg| arg == "--stt");
+    let root = if stt {
+        jarvis_voice::models::stt_root()?
+    } else {
+        jarvis_voice::models::model_root()?
+    };
+    let verify = if stt {
+        jarvis_voice::models::verify_stt
+    } else {
+        jarvis_voice::models::verify
+    };
     let parent = root.parent().ok_or("Model parent is unavailable")?;
     fs::create_dir_all(parent)?;
     for ancestor in parent.ancestors() {
@@ -70,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             return Err("Model parent must not contain symbolic links".into());
         }
     }
-    if jarvis_voice::models::verify(&root).is_ok() {
+    if verify(&root).is_ok() {
         println!("Voice models already verified");
         return Ok(());
     }
@@ -85,9 +95,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         use std::os::unix::fs::PermissionsExt;
         fs::set_permissions(&staging, fs::Permissions::from_mode(0o700))?;
     }
-    install(&staging,"wake","https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01.tar.bz2","f170013b4716e41b62b9bfd809687c207cef798ef9bc6534d524e17af9b6561a")?;
-    install(&staging,"kokoro","https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2","4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e")?;
-    jarvis_voice::models::verify(&staging)?;
+    if stt {
+        install(&staging, "stt", "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-2023-06-26.tar.bz2", "639e25b578e9e997131402199419c13a941f8e4e198e2da1ce57dbf5cf401282")?;
+    } else {
+        install(&staging,"wake","https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01.tar.bz2","f170013b4716e41b62b9bfd809687c207cef798ef9bc6534d524e17af9b6561a")?;
+        install(&staging,"kokoro","https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2","4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e")?;
+    }
+    verify(&staging)?;
     if root.symlink_metadata().is_ok() {
         if fs::symlink_metadata(&root)?.file_type().is_symlink() {
             return Err("Model destination must not be a symbolic link".into());
