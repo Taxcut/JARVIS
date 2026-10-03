@@ -29,6 +29,7 @@
     "macOS": {
       "minimumSystemVersion": "13.0",
       "signingIdentity": "-",
+      "entitlements": "Entitlements.plist",
       "files": {
         "Library/LaunchAgents/com.taxcut.jarvis.runtime.plist": "../../../crates/runtime/resources/com.taxcut.jarvis.runtime.plist"
       }

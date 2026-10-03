@@ -11,9 +11,9 @@ Draft [PR #4](https://github.com/Taxcut/JARVIS/pull/4) remains unmerged on
 The first implementation checkpoint `18d922bbc606177779c97e315b3541bd05ef140e`
 passed [Validate 36683188583](https://github.com/Taxcut/JARVIS/actions/runs/36683188583):
 Linux TypeScript/PostgreSQL, macOS native and Windows native jobs all succeeded.
-Later refinements need their own hosted evidence.
+Validate 36836908811 also passed Linux/macOS/Windows on aba5cf9. Later changes require their own hosted evidence.
 
-Current local refinements pass all 49 TypeScript tests plus formatting, lint,
+Current local refinements pass all 50 TypeScript tests plus formatting, lint,
 strict types and builds; full native Clippy and 28 Rust tests pass (the existing
 physical credential-store test remains intentionally ignored). Six separately
 captured deterministic visual states compare exactly to reviewed 1024×768 Mac
@@ -30,13 +30,18 @@ physical check, not successful wake acceptance. The correction adds explicit
 macOS AVFoundation authorization, asynchronous permission waiting, distinct audio
 buffer failures, a stopped-callback watchdog and recovery from brief authority
 loss. A synthetic resampler/echo-cancellation test preserves near-end input;
-it does not prove physical microphone capture. Rebuilt physical acceptance is
-still required.
+it does not prove physical microphone capture. The next bundle correction added the missing signed audio-input entitlement
+to both desktop and helper while retaining hardened runtime. The owner approved
+Keychain and the microphone dialog; native status then showed GRANTED, nonzero
+input, wake/TTS models ready and ONLINE. Spoken stop, conversation and barge-in
+acceptance remain pending. Voice is now deliberately off during the local migration.
 
-Provider credential issuance and TLS connection succeeded earlier, but OpenAI
-returned `credit_balance_exhausted`; the owner has not confirmed API billing is
-fixed. No live conversation or physical barge-in pass is claimed. Further native
-voice, startup, lifecycle/performance and Windows remote checks remain open. See
+The owner superseded the cloud-default design on 2026-10-02: default voice must
+use local sherpa streaming STT, local Qwen3 4B Instruct-class conversation and
+Kokoro. The historical OpenAI `credit_balance_exhausted` result is **not a Phase 4
+blocker** and no purchase is required. Local STT/Qwen integration and physical
+conversation/barge-in acceptance are pending. Original Prompt #4 requirements
+remain in scope except where this explicit local-default decision supersedes them. See
 [PHASE4_WORKLOG](PHASE4_WORKLOG.md), [VOICE](VOICE.md) and [DESIGN](DESIGN.md).
 
 # Implementation status

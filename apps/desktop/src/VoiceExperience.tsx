@@ -2,7 +2,7 @@ import { Notice } from './Notice.js';
 import { useVisualPreferences } from './visual-preferences.js';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import type { VoicePhase } from '@jarvis/protocol';
+import type { VoicePhase, VoiceStatus } from '@jarvis/protocol';
 import type { BodyState, Quality } from './IntelligenceBody.js';
 const IntelligenceBody = lazy(() =>
   import('./IntelligenceBody.js').then((module) => ({
@@ -26,6 +26,33 @@ export function bodyState(
     return 'ALERT';
   return 'IDLE';
 }
+export function voiceHeadline(
+  status: VoiceStatus | null,
+  connected: boolean,
+): string {
+  if (!connected) return 'A quiet beginning.';
+  if (!status) return 'Ready when you are, Sir.';
+  if (status.phase === 'WAKE_ONLY')
+    return status.microphone && status.wakeReady
+      ? 'Say “Jarvis.”'
+      : 'Preparing local audio…';
+  const titles: Record<Exclude<VoicePhase, 'WAKE_ONLY'>, string> = {
+    DISABLED: 'Voice is off.',
+    MUTED: 'Microphone muted.',
+    STARTING: 'Preparing your voice…',
+    LISTENING: 'Go ahead, Sir.',
+    THINKING: 'One moment, Sir.',
+    SPEAKING: 'At your service, Sir.',
+    INTERRUPTED: 'Go ahead, Sir.',
+    PERMISSION_REQUIRED: 'Microphone access is needed.',
+    UNAVAILABLE: 'Voice is unavailable.',
+    DEGRADED: 'Voice needs attention.',
+    AUTH_REQUIRED: 'Reconnect your trusted runtime.',
+    LOCKDOWN: 'Voice paused by lockdown.',
+    SUSPENDED: 'Voice is paused.',
+  };
+  return titles[status.phase];
+}
 export function VoiceExperience({
   voice,
   onSetup,
@@ -40,17 +67,7 @@ export function VoiceExperience({
   const status = voice.status,
     state = bodyState(status?.phase, connected),
     settings = status?.settings;
-  const copy = !connected
-    ? 'A quiet beginning.'
-    : status?.phase === 'SPEAKING'
-      ? 'At your service, Sir.'
-      : status?.phase === 'THINKING'
-        ? 'One moment, Sir.'
-        : status?.phase === 'LISTENING'
-          ? 'Go ahead, Sir.'
-          : settings?.enabled
-            ? 'Say “Jarvis.”'
-            : 'Ready when you are, Sir.';
+  const copy = voiceHeadline(status, connected);
   return (
     <section className="voice-experience" aria-labelledby="presence-title">
       <div className="presence-topline">
@@ -171,7 +188,7 @@ export function VoiceExperience({
           ? 'Conversation audio is sent to OpenAI. Speech is generated locally.'
           : status?.microphone
             ? 'Wake detection stays on this device. No audio is being sent online.'
-            : 'Your microphone is off. Voice starts only when you enable it.'}
+            : 'Your microphone is off. No audio is being captured.'}
       </p>
       <Notice message={voice.error} />
       <div className="conversation-strip">

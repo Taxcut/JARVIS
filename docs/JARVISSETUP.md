@@ -175,3 +175,15 @@ until macOS grants microphone access. If denied, enable JARVIS in System Setting
 reset Keychain or TCC permissions as a workaround. A ready label is not a substitute
 for a spoken acceptance check. Model installation now verifies into a fresh private
 staging directory and retains the previous model directory for recovery.
+
+### Local-default transition (2026-10-02)
+
+The owner superseded the OpenAI-default instructions above: paid API credit is
+**not required** for Prompt #4. Local streaming STT and Qwen setup are being
+integrated; keep voice off until the local stack is installed and verified.
+Kokoro and wake models remain local. Historical provider setup is optional only.
+After building a Mac app, run `pnpm desktop:verify-macos` before installation.
+This checks the final desktop/helper audio-input entitlements, hardened-runtime
+flags, nested signature integrity and microphone usage description. The optional
+path argument checks an installed bundle. Do not work around missing entitlements
+by weakening macOS protections.

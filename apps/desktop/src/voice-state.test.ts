@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { bodyState } from './VoiceExperience.js';
+import { bodyState, voiceHeadline } from './VoiceExperience.js';
 import { qualityProfiles } from './IntelligenceBody.js';
 import { voiceStatusSchema } from '@jarvis/protocol';
 it('shows actual audio and security states rather than an always-online presence', () => {
@@ -24,4 +24,27 @@ it('rejects invented voice readiness and execution authorization', () => {
       executionAvailable: true,
     }).success,
   ).toBe(false);
+});
+
+it('never invites wake speech while capture or permission is unavailable', () => {
+  const base = {
+    phase: 'PERMISSION_REQUIRED',
+    microphone: false,
+    wakeReady: false,
+  };
+  expect(voiceHeadline(base as Parameters<typeof voiceHeadline>[0], true)).toBe(
+    'Microphone access is needed.',
+  );
+  expect(
+    voiceHeadline(
+      { ...base, phase: 'MUTED' } as Parameters<typeof voiceHeadline>[0],
+      true,
+    ),
+  ).toBe('Microphone muted.');
+  expect(
+    voiceHeadline(
+      { ...base, phase: 'WAKE_ONLY' } as Parameters<typeof voiceHeadline>[0],
+      true,
+    ),
+  ).not.toContain('Say');
 });

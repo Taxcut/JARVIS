@@ -160,3 +160,33 @@ visible; successful retry clears it. A regression test covers both mute and
 disable against a failing settings store. Pending startup speech is cancelled by
 privacy/lifecycle shutdown, and sound cues can remain enabled independently of
 the optional spoken greeting. Voice tests now total 13 on macOS.
+
+## Local-default continuation — 2026-10-02
+
+Owner explicitly replaced the paid default with sherpa streaming STT → local
+Qwen3 4B Instruct-class inference → Kokoro. Preserve the prior implementation and
+original Prompt #4 acceptance checklist; do not restart or introduce Prompt #5.
+OpenAI credit is no longer a blocker or required owner action. Keep any retained
+cloud adapter optional and inactive by default.
+
+The installed package lacked the hardened-runtime audio-input entitlement. Added
+the narrow entitlement to desktop/helper; both signatures and hardened runtime
+now verify. The owner then approved Keychain and the actual microphone dialog.
+Status showed GRANTED, nonzero input, ONLINE and both local wake/TTS models ready.
+The prior failed physical stop test is not overwritten; its retest is pending.
+Voice was turned off through the app while replacing the cloud-default path.
+
+The package verifier rejects absent signed entitlements; the manual macOS package
+workflow now builds/verifies the actual app. A refused OS permission callback no
+longer leaves the app indefinitely pending. UI headings reflect permission,
+lockdown and degraded states truthfully. 50 TypeScript tests/static/build checks,
+13 targeted voice Rust tests and Clippy passed; supplied-secret/history scan passed.
+
+Real Gaming PC at 9a242d3 passed full workspace Clippy, 28 native tests and the
+native desktop/runtime build. Model execution did not complete before SSH became
+unreachable; frontend artifacts were built on Mac due the documented Windows
+pnpm junction policy. No Windows physical voice success is claimed.
+
+Next: implement pinned streaming STT and a bounded local conversation adapter,
+benchmark Qwen on this 8 GB Mac, update setup/privacy/readiness, then rerun the
+changed-stack gates and physical acceptance. Do not merge PR #4.

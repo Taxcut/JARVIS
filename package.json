@@ -24,6 +24,7 @@
     "configure": "tsx infra/scripts/configure.ts",
     "runtime:prepare": "node infra/scripts/prepare-runtime.mjs",
     "desktop:bundle": "pnpm runtime:prepare --release && pnpm --filter @jarvis/desktop tauri build",
+    "desktop:verify-macos": "node infra/scripts/verify-macos-bundle.mjs",
     "voice:models": "cargo run --release -p jarvis-voice --example install_models",
     "voice:probe": "cargo run --release -p jarvis-voice --example model_probe",
     "visual:compare": "node infra/scripts/compare-visual.mjs"

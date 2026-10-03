@@ -4,6 +4,7 @@ pub fn ready() -> Result<bool, &'static str> {
     use objc2_av_foundation::{AVAuthorizationStatus, AVCaptureDevice, AVMediaTypeAudio};
     use std::sync::atomic::{AtomicBool, Ordering};
     static REQUESTED: AtomicBool = AtomicBool::new(false);
+    static REFUSED: AtomicBool = AtomicBool::new(false);
     // Only the documented audio media constant is supplied. The completion block
     // captures nothing; AVFoundation retains it while the system prompt is open.
     unsafe {
@@ -11,8 +12,13 @@ pub fn ready() -> Result<bool, &'static str> {
         match AVCaptureDevice::authorizationStatusForMediaType(media) {
             AVAuthorizationStatus::Authorized => Ok(true),
             AVAuthorizationStatus::NotDetermined => {
+                if REFUSED.load(Ordering::Acquire) {
+                    return Err("macOS could not grant microphone access. Reopen the installed JARVIS app and check System Settings → Privacy & Security → Microphone.");
+                }
                 if !REQUESTED.swap(true, Ordering::AcqRel) {
-                    let done = block2::RcBlock::new(|_: objc2::runtime::Bool| {});
+                    let done = block2::RcBlock::new(|granted: objc2::runtime::Bool| {
+                        REFUSED.store(!granted.as_bool(), Ordering::Release);
+                    });
                     AVCaptureDevice::requestAccessForMediaType_completionHandler(media, &done);
                 }
                 Ok(false)

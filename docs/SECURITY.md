@@ -122,3 +122,11 @@ visible; successful retry clears it. A regression test covers both mute and
 disable against a failing settings store. Pending startup speech is cancelled by
 privacy/lifecycle shutdown, and sound cues can remain enabled independently of
 the optional spoken greeting. Voice tests now total 13 on macOS.
+
+Local-default migration (2026-10-02): the owner requires local STT/Qwen/Kokoro;
+cloud audio must not be the normal path. Voice remains off during this migration.
+Current ONLINE/NORMAL authority requirements remain intact even when inference
+is local. Microphone packaging now includes the narrow signed audio-input
+entitlement in both native executables; hardened runtime remains enabled. The
+owner approved microphone access, and nonzero input was verified without storing
+audio or reading private transcripts. Physical stop/barge-in tests remain open.

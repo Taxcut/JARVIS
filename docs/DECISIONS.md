@@ -158,3 +158,18 @@ identity remains unchanged. Distinguish buffer/device/callback failures without
 logging samples. A short authority interruption invalidates the stream; recovery
 reopens it through current authorization rather than leaving a disabled callback
 behind an apparently active status. Physical success still requires owner evidence.
+
+## Local default supersedes paid Realtime (2026-10-02)
+
+The owner explicitly requires local sherpa-onnx streaming STT, a local Qwen3 4B
+Instruct-class conversation model and Kokoro bm_george as the normal voice path.
+OpenAI billing is no longer an acceptance blocker; any retained cloud adapter is
+optional and cannot silently activate. The existing current Core/identity/NORMAL
+authority fence remains mandatory, including for local conversation. No tools or
+execution authority are added. Runtime choice and performance require measurement
+on the current 8 GB Mac and supported Windows environment.
+
+macOS microphone packaging requires both usage-description metadata and the
+signed `com.apple.security.device.audio-input` entitlement on desktop and helper.
+Keep hardened runtime enabled and verify the final nested signatures. The owner
+approved the resulting real microphone request; do not reset TCC/Keychain.
