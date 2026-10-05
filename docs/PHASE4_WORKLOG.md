@@ -298,3 +298,21 @@ Local conversation's five-minute deadline now participates in both idle and
 generation waits. It cannot be extended by repeated interruption signals or by a
 last generation started just before the deadline. Cancellation still drops the
 in-flight request; no cloud fallback or execution capability was added.
+
+The combined recovery update passed all 19 voice tests and voice Clippy on both
+the Mac and the real Windows machine. Signed Mac bundle verification passed and
+the complete app was installed with the prior bundle backed up. Start-at-login
+was restored; the changed helper is waiting for owner Keychain approval with
+capture off. No physical result is fabricated while that approval is pending.
+
+Repeated Windows silent inference on 12bc370 passed: STT load 1761 ms, decode
+137 ms for 3601 ms synthetic audio, first partial at 780 ms, Qwen first token
+4129 ms, first-sentence synthesis 2548 ms for 2516 ms output, first audio ready
+6886 ms after STT. This still does not prove physical Windows microphone/playback,
+barge-in or a reliable distribution of cold-start latency. Windows retained the
+non-blocking LNK4098 warning; OS security remained unchanged.
+
+Hosted [Validate 37289240260](https://github.com/Taxcut/JARVIS/actions/runs/37289240260)
+completed successfully on 12bc370e9f519741fbf5c0fc6021aad39e9771c5 with Linux, macOS
+and Windows jobs all successful. The following evidence commit is documentation
+only. Phase 4 remains incomplete and PR #4 remains draft/unmerged.

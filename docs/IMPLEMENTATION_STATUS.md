@@ -85,8 +85,13 @@ build. The remaining follow-up/wake/stop matrix is pending. Hosted
 passed all three platforms on `4c2c160ec297b389f7074bc924de052833ff0147`.
 Later recovery hardening restores the retry budget only after 30 seconds of healthy
 audio and reports exhausted retries accurately. The five-minute local conversation
-deadline now applies during generation and interruption waits. These changes need
-their own hosted/build evidence and physical retest.
+deadline now applies during generation and interruption waits. The signed Mac bundle was rebuilt, verified and installed.
+[Validate 37289240260](https://github.com/Taxcut/JARVIS/actions/runs/37289240260)
+passed Linux/macOS/Windows on `12bc370e9f519741fbf5c0fc6021aad39e9771c5`.
+All 19 voice tests and voice Clippy also passed on the real Mac and Windows machines.
+A repeated silent Windows local pipeline passed (first token 4129 ms; first sentence
+ready 6886 ms after STT). Start-at-login is enabled. The new Mac helper is awaiting
+owner Keychain approval with capture off; physical retesting remains pending.
 
 # Implementation status
 
