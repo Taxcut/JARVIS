@@ -228,3 +228,33 @@ Windows local-stack checks, expanded visual/product/accessibility/performance
 acceptance and final security/CI. The Gaming PC became reachable again; no OS
 security protection was changed. The owner may sleep; do not require a password or
 block independent work while waiting for their return.
+
+## Windows and product continuation — 2026-10-04
+
+Hosted Validate 37088715100 passed Linux, macOS and Windows on e8ea51a. The real
+Windows machine passed Clippy, 32 native tests and the updated native build.
+Ollama setup initially encountered the OS-blocked PowerShell archive module.
+Using the built-in Windows tar extractor succeeded without changing OS policy.
+The optional --archive input reuses a downloaded archive only after the same
+pinned SHA-256 verification. No model/runtime versions changed.
+
+First silent Windows local probe: recognition dropped “what”, first token 49121 ms,
+arithmetic answer assertion failed. A repeated probe recognized “what is too plus
+two”, answered four and completed synthesis: STT load 1639 ms, decode 121 ms for
+3602 ms audio, first partial at 780 ms, Qwen first token 2957 ms, first sentence
+Kokoro 3294 ms for 2972 ms audio, post-STT first audio ready 6488 ms. The probe now
+prints its fixed synthetic answer before the assertion to make failure diagnosable.
+No microphone, speaker, owner transcript or cloud API was used. The initial failure
+and cold latency remain open; physical Windows voice is still unvalidated.
+
+Added consequence/reversal/passkey confirmation to device/passkey/session
+revocation, enrollment approval, recovery replacement and lockdown. An isolated
+fixture verified Cancel default focus, Escape cancellation with zero callbacks,
+focus restoration and one callback after confirmation. Settings/loading fixtures
+use no connected services or audio. Boot now assembles a point, ring and opposing
+arcs before the approved mark; existing readiness/skip/reduced-motion gates remain.
+
+The owner requested silence during class: native voice stayed DISABLED, microphone
+and cloud audio false. They subsequently authorized audio again. After the reported
+power interruption, Core health and ONLINE native state were verified; no claim of
+a controlled reboot or sleep/resume acceptance is made from those observations.

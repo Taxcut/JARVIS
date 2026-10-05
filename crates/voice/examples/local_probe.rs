@@ -104,11 +104,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     let answer = task.await??;
+    println!("Fixed synthetic answer: {answer}");
     assert!(
         answer.to_lowercase().contains("four") || answer.contains('4'),
         "Local arithmetic response check failed"
     );
-    println!("Fixed synthetic answer: {answer}");
     drop(speech);
     let (first_audio_ms, tts_ms, output_ms) =
         synthesis.join().map_err(|_| "Speech worker failed")??;

@@ -4,7 +4,7 @@ Prompt #4 is authorized and underway. See [PHASE4_WORKLOG](PHASE4_WORKLOG.md)
 for current implementation and verification boundaries. Historical Phase 1–3
 evidence below remains valid; it does not imply Phase 4 acceptance.
 
-## Current Phase 4 checkpoint — 2026-10-01
+## Current Phase 4 checkpoint — 2026-10-04
 
 Draft [PR #4](https://github.com/Taxcut/JARVIS/pull/4) remains unmerged on
 `feat/phase4-voice-cinematic`. Phase 4 is **not complete**. Prompt #5 has not started.
@@ -48,11 +48,29 @@ Qwen; accuracy and overly cautious wording still need a real owner review.
 
 The changed stack passes 50 TypeScript tests/static/build checks, 19 isolated
 PostgreSQL integration tests, workspace Clippy and 33 native tests (17 voice;
-one separate physical credential-store test remains ignored). New source needs
-fresh hosted CI and a new installed native build. All original Prompt #4 gates
+one separate physical credential-store test remains ignored). Hosted [Validate 37088715100](https://github.com/Taxcut/JARVIS/actions/runs/37088715100)
+passed all Linux/macOS/Windows jobs on `e8ea51a62f9d732ae133cb8d97a41be7ff58022b`.
+Subsequent product/setup refinements require their own hosted check. All original Prompt #4 gates
 remain applicable unless explicitly superseded by the local-default decision.
-See [PHASE4_ACCEPTANCE](PHASE4_ACCEPTANCE.md) for open work. The owner is asleep;
-protected OS approvals and physical spoken checks may wait until they return.
+See [PHASE4_ACCEPTANCE](PHASE4_ACCEPTANCE.md) for open work. Voice remained off
+while the owner was in class. The owner has now authorized audible testing again.
+Core and the native owner connection were rechecked healthy after the reported
+laptop power interruption; this does not itself prove a full reboot acceptance test.
+
+Real Windows Clippy, 32 native tests, native build and STT/model installation passed.
+The pinned runtime installer now uses Windows tar because the PowerShell archive
+module was blocked by existing OS policy; no protection was disabled. A repeated
+silent STT → Qwen → Kokoro probe passed: STT load 1639 ms, decode 121 ms, first
+partial at 780 ms of source audio, Qwen first token 2957 ms, first sentence ready
+6488 ms after STT. The initial cold probe failed its arithmetic response check
+after dropping part of the spoken question, with a 49121 ms first token. Preserve
+that reliability/performance finding; a successful repeat is not physical voice
+acceptance or proof that cold-start performance is resolved.
+
+Protected security changes now explain their consequence and reversibility in a
+keyboard-accessible confirmation before the existing passkey verification. Isolated
+UI checks confirmed Cancel focus, Escape without dispatch, trigger focus restoration
+and exactly one confirmed dispatch. Production identity mutations were not exercised.
 
 # Implementation status
 

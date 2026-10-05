@@ -13,6 +13,12 @@ import { execFileSync, spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 const version = '0.35.1';
+const suppliedArchive =
+  process.argv[2] === '--archive' ? process.argv[3] : null;
+if (process.argv.length > 2 && (!suppliedArchive || process.argv.length !== 4))
+  throw new Error(
+    'Use --archive with one previously downloaded pinned archive',
+  );
 const model = 'qwen3:4b-instruct-2507-q4_K_M';
 const digest =
   '0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0';
@@ -70,25 +76,29 @@ if (!(await exists(executable))) {
     );
   const staging = path.join(root, `.ollama-setup-${process.pid}-${Date.now()}`);
   await mkdir(staging, { mode: 0o700 });
-  const archive = path.join(staging, release[0]);
-  const output = await open(archive, 'wx', 0o600);
-  try {
-    const response = await globalThis.fetch(
-      `https://github.com/ollama/ollama/releases/download/v${version}/${release[0]}`,
-      { signal: globalThis.AbortSignal.timeout(900000) },
-    );
-    if (!response.ok || !response.body)
-      throw new Error('Local runtime download failed');
-    let count = 0;
-    for await (const bytes of response.body) {
-      count += bytes.length;
-      if (count > 2 * 1024 ** 3)
-        throw new Error('Runtime archive exceeded its limit');
-      await output.write(bytes);
+  const archive = suppliedArchive
+    ? path.resolve(suppliedArchive)
+    : path.join(staging, release[0]);
+  if (!suppliedArchive) {
+    const output = await open(archive, 'wx', 0o600);
+    try {
+      const response = await globalThis.fetch(
+        `https://github.com/ollama/ollama/releases/download/v${version}/${release[0]}`,
+        { signal: globalThis.AbortSignal.timeout(900000) },
+      );
+      if (!response.ok || !response.body)
+        throw new Error('Local runtime download failed');
+      let count = 0;
+      for await (const bytes of response.body) {
+        count += bytes.length;
+        if (count > 2 * 1024 ** 3)
+          throw new Error('Runtime archive exceeded its limit');
+        await output.write(bytes);
+      }
+      await output.sync();
+    } finally {
+      await output.close();
     }
-    await output.sync();
-  } finally {
-    await output.close();
   }
   if ((await hashFile(archive)) !== release[1])
     throw new Error('Runtime archive failed its pinned integrity check');
@@ -97,19 +107,12 @@ if (!(await exists(executable))) {
   // Extraction is permitted only after matching the exact trusted release archive.
   if (process.platform === 'darwin')
     execFileSync('tar', ['-xzf', archive, '-C', unpacked], { stdio: 'pipe' });
-  else {
-    const quote = (s) => `'${s.replaceAll("'", "''")}'`;
+  else
     execFileSync(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        `Expand-Archive -LiteralPath ${quote(archive)} -DestinationPath ${quote(unpacked)}`,
-      ],
+      path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe'),
+      ['-xf', archive, '-C', unpacked],
       { stdio: 'pipe' },
     );
-  }
   await mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
   await rename(unpacked, destination);
   console.log(

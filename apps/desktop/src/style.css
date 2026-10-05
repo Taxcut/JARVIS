@@ -1252,7 +1252,7 @@ footer {
   object-fit: cover;
   border-radius: 25px;
   box-shadow: var(--glow-brand);
-  animation: brand-reveal 1700ms cubic-bezier(0.18, 0.7, 0.2, 1);
+  animation: brand-reveal 1200ms 700ms cubic-bezier(0.18, 0.7, 0.2, 1) both;
 }
 .boot-sequence h2 {
   font-size: 31px;
@@ -1274,21 +1274,86 @@ footer {
 .boot-sequence button {
   margin-top: 18px;
 }
+.boot-point {
+  position: absolute;
+  top: calc(50% - 67px);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ddf6ff;
+  box-shadow: 0 0 24px #a8e6ff;
+  pointer-events: none;
+  animation: boot-energy 1400ms ease-out both;
+}
 .boot-orbit {
   position: absolute;
-  width: 330px;
-  height: 330px;
-  border: 1px solid #6994a020;
-  border-radius: 50%;
-  top: calc(50% - 225px);
+  width: 360px;
+  height: 360px;
+  top: calc(50% - 245px);
   pointer-events: none;
+  fill: none;
+  stroke: #86bdcc55;
+  stroke-width: 0.8;
 }
-.boot-orbit:after {
-  content: '';
-  position: absolute;
-  inset: -20px;
-  border: 1px dashed #80b5c018;
-  border-radius: 50%;
+.boot-ring {
+  stroke-dasharray: 880;
+  animation: boot-ring-form 1300ms 180ms ease-out both;
+  transform-origin: center;
+}
+.boot-arc {
+  stroke-dasharray: 170 60 50 90;
+  animation: boot-arcs-form 1700ms 450ms ease-out both;
+  transform-origin: center;
+}
+.boot-arc.inner {
+  stroke: #d9b77560;
+  animation-name: boot-inner-form;
+}
+@keyframes boot-energy {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(10);
+  }
+}
+@keyframes boot-ring-form {
+  from {
+    opacity: 0;
+    stroke-dashoffset: 880;
+    transform: scale(0.25);
+  }
+  to {
+    opacity: 1;
+    stroke-dashoffset: 0;
+    transform: scale(1);
+  }
+}
+@keyframes boot-arcs-form {
+  from {
+    opacity: 0;
+    transform: rotate(-70deg) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+}
+@keyframes boot-inner-form {
+  from {
+    opacity: 0;
+    transform: rotate(70deg) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
 }
 @keyframes brand-reveal {
   from {
@@ -1593,4 +1658,54 @@ nav button {
 }
 .product-notice[data-severity='success'] {
   border-inline-start-color: var(--status-success);
+}
+
+.confirmation-dialog {
+  width: min(520px, calc(100vw - 40px));
+  box-sizing: border-box;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #101b23;
+  color: var(--text);
+  box-shadow: 0 28px 90px #0009;
+}
+.confirmation-dialog::backdrop {
+  background: #03070bca;
+}
+.confirmation-dialog h2 {
+  font-size: 24px;
+  letter-spacing: -0.6px;
+}
+.confirmation-dialog p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.confirmation-dialog .actions {
+  justify-content: flex-end;
+  margin-top: 26px;
+}
+
+.boot-reduced .boot-point,
+.boot-repeat .boot-point {
+  display: none;
+}
+.boot-reduced .boot-ring,
+.boot-reduced .boot-arc {
+  animation: none;
+}
+.boot-repeat img {
+  animation-delay: 100ms;
+  animation-duration: 650ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot-point {
+    display: none;
+  }
+  .boot-ring,
+  .boot-arc {
+    animation: none;
+  }
 }

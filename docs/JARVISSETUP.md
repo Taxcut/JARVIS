@@ -185,3 +185,9 @@ This checks the final desktop/helper audio-input entitlements, hardened-runtime
 flags, nested signature integrity and microphone usage description. The optional
 path argument checks an installed bundle. Do not work around missing entitlements
 by weakening macOS protections.
+
+Local runtime download recovery: `pnpm voice:local-setup --archive /absolute/path/to/archive`
+can reuse the exact platform release archive after an interrupted installation.
+Its pinned SHA-256 must still match; this is not a custom-runtime option. Windows
+uses the built-in System32 tar extractor, so the PowerShell Archive module is not
+required. Do not disable application control to run setup.

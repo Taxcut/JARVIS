@@ -62,7 +62,12 @@ export function BootSequence({
       role="region"
       aria-label="JARVIS startup"
     >
-      <div className="boot-orbit" aria-hidden="true" />
+      <div className="boot-point" aria-hidden="true" />
+      <svg className="boot-orbit" viewBox="0 0 360 360" aria-hidden="true">
+        <circle className="boot-ring" cx="180" cy="180" r="140" />
+        <circle className="boot-arc" cx="180" cy="180" r="159" />
+        <circle className="boot-arc inner" cx="180" cy="180" r="126" />
+      </svg>
       <img src="/brand/approved-j-master.png" alt="JARVIS" />
       <h2>JARVIS</h2>
       <span>PERSONAL INTELLIGENCE</span>
