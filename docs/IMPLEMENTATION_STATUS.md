@@ -72,6 +72,13 @@ keyboard-accessible confirmation before the existing passkey verification. Isola
 UI checks confirmed Cancel focus, Escape without dispatch, trigger focus restoration
 and exactly one confirmed dispatch. Production identity mutations were not exercised.
 
+The installed local build restored ONLINE after owner Keychain/microphone approval,
+with real input and wake/STT/TTS readiness. Native model first-token telemetry
+advanced, but an audio retry failure interrupted acceptance. CPAL advisory events
+were incorrectly classified as fatal; a targeted correction and regression passed
+18 voice tests and Clippy. Physical retest remains required; the generic original
+error does not establish its exact underlying cause.
+
 # Implementation status
 
 ## Phase 3 — COMPLETE for the current Mac scope; Windows physical acceptance intentionally deferred

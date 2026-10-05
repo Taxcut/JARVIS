@@ -680,6 +680,9 @@ impl Worker {
                 )
             }
             5 => return Err("The microphone buffer is unsupported. Select another input."),
+            6 => return Err("The audio format changed. Reconnecting…"),
+            7 => return Err("An audio device is busy. Reconnecting…"),
+            8 => return Err("The system audio service reported a failure. Reconnecting…"),
             2.. => return Err("An audio device changed or stopped. Reconnecting…"),
             _ => {}
         }

@@ -136,14 +136,22 @@ fn choose(
     })
 }
 fn mark_failure(e: cpal::Error, f: &AtomicU8) {
-    f.store(
-        if e.kind() == cpal::ErrorKind::PermissionDenied {
-            1
-        } else {
-            2
-        },
-        Ordering::Release,
-    );
+    // CPAL reports advisory events through the same callback as fatal errors.
+    // Xrun is a transient glitch; DeviceChanged already rerouted the stream;
+    // RealtimeDenied leaves playback active. Reopening on these can create a
+    // self-sustaining overload/retry loop. The capture watchdog and device check
+    // still detect genuinely stalled or disconnected streams.
+    let code = match e.kind() {
+        cpal::ErrorKind::Xrun
+        | cpal::ErrorKind::DeviceChanged
+        | cpal::ErrorKind::RealtimeDenied => return,
+        cpal::ErrorKind::PermissionDenied => 1,
+        cpal::ErrorKind::StreamInvalidated => 6,
+        cpal::ErrorKind::DeviceBusy => 7,
+        cpal::ErrorKind::BackendError => 8,
+        _ => 2,
+    };
+    f.store(code, Ordering::Release);
 }
 fn input_stream<T: Sample + SizedSample>(
     device: &cpal::Device,
@@ -472,6 +480,36 @@ pub fn resample_playback(input: &[f32], from: u32, to: u32) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn advisory_audio_events_do_not_destroy_a_live_stream_or_clear_failure() {
+        for initial in [0, 1, 2] {
+            let failure = AtomicU8::new(initial);
+            for kind in [
+                cpal::ErrorKind::Xrun,
+                cpal::ErrorKind::DeviceChanged,
+                cpal::ErrorKind::RealtimeDenied,
+            ] {
+                mark_failure(cpal::Error::new(kind), &failure);
+                assert_eq!(failure.load(Ordering::Acquire), initial);
+            }
+        }
+        let failure = AtomicU8::new(0);
+        mark_failure(
+            cpal::Error::new(cpal::ErrorKind::PermissionDenied),
+            &failure,
+        );
+        assert_eq!(failure.load(Ordering::Acquire), 1);
+        mark_failure(
+            cpal::Error::new(cpal::ErrorKind::DeviceNotAvailable),
+            &failure,
+        );
+        assert_eq!(failure.load(Ordering::Acquire), 2);
+        mark_failure(
+            cpal::Error::new(cpal::ErrorKind::StreamInvalidated),
+            &failure,
+        );
+        assert_eq!(failure.load(Ordering::Acquire), 6);
+    }
     #[test]
     fn local_capture_preserves_near_end_audio_without_playback() {
         let stream = sonora::StreamConfig::new(16000, 1);

@@ -258,3 +258,21 @@ The owner requested silence during class: native voice stayed DISABLED, micropho
 and cloud audio false. They subsequently authorized audio again. After the reported
 power interruption, Core health and ONLINE native state were verified; no claim of
 a controlled reboot or sleep/resume acceptance is made from those observations.
+
+### Native local audio follow-up
+
+Installed the verified local bundle and owner approved Keychain and microphone.
+ONLINE, GRANTED, wake/STT/TTS ready and real nonzero input were observed; startup
+registration was restored. Native wake count and local first-token telemetry
+(3771 ms) advanced, but audio subsequently entered a device-failure retry state.
+No successful spoken conversation is claimed without the owner's result.
+
+Code review found CPAL 0.18.2 advisory Xrun, automatically handled DeviceChanged
+and RealtimeDenied events were all treated as fatal stream errors. These now leave
+a live stream intact. Real permission/disconnect/invalidation failures still stop
+audio; the existing hotplug checks, bounded queues and capture watchdog remain.
+This fixes a concrete recovery defect; the old generic error did not identify
+which CPAL event occurred, so it is not proof of the physical failure's exact cause.
+A regression covers advisories preserving live state and preexisting failures,
+plus permission, device removal and stream invalidation. All 18 voice tests and
+voice Clippy passed. The full signed Mac bundle is rebuilt for physical retesting.
