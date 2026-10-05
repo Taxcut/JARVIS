@@ -276,3 +276,25 @@ which CPAL event occurred, so it is not proof of the physical failure's exact ca
 A regression covers advisories preserving live state and preexisting failures,
 plus permission, device removal and stream invalidation. All 18 voice tests and
 voice Clippy passed. The full signed Mac bundle is rebuilt for physical retesting.
+
+## Recovery continuation — 2026-10-05
+
+The owner explicitly confirmed a complete spoken local answer on the audio-fix
+build. Immediate speech after Hey Jarvis, follow-up without re-waking and spoken
+stop were requested but not yet confirmed. Preserve that limited successful
+physical result; do not infer the remaining acceptance matrix. Hosted Validate
+37246216411 passed Linux/macOS/Windows on 4c2c160. The preceding run 37245803024
+was superseded/cancelled before all jobs finished.
+
+On continuation, Core/native identity remained ONLINE, while audio had exhausted
+retries after device changes/backlog. Review found that the retry count accumulated
+across the worker lifetime. Thirty seconds of successful audio processing now
+replenishes the budget; rapid repeated failures remain capped at five. Exhaustion
+explicitly says automatic recovery paused and offers Settings → Reconnect audio
+instead of falsely promising an ongoing retry. A regression exercises repeated
+short-lived recovery, exhaustion, sustained health and the next independent failure.
+
+Local conversation's five-minute deadline now participates in both idle and
+generation waits. It cannot be extended by repeated interruption signals or by a
+last generation started just before the deadline. Cancellation still drops the
+in-flight request; no cloud fallback or execution capability was added.

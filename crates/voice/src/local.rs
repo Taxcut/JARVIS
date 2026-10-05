@@ -239,13 +239,14 @@ pub async fn run(
     }
     let _ = event(&events, Event::Connected);
     let mut history = VecDeque::<Message>::new();
-    let started = tokio::time::Instant::now();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(300);
     loop {
         if !active.load(Ordering::Acquire) {
             return;
         }
         let text = tokio::select! {
             biased;
+            _ = tokio::time::sleep_until(deadline) => break,
             signal = interrupt.recv() => {
                 if signal.is_none() { return; }
                 if history.back().is_some_and(|m| m.role == "assistant") { history.pop_back(); }
@@ -265,6 +266,7 @@ pub async fn run(
         let id = uuid::Uuid::new_v4().to_string();
         let result = tokio::select! {
             biased;
+            _ = tokio::time::sleep_until(deadline) => break,
             _ = interrupt.recv() => None,
             result = tokio::time::timeout(Duration::from_secs(90), generate(&messages, &events, &id, text.generation, &active)) => Some(result.unwrap_or(Err("Local model timed out. Try a shorter question or reconnect audio."))),
         };
@@ -282,9 +284,6 @@ pub async fn run(
                 let _ = event(&events, Event::Ended(message, true));
                 return;
             }
-        }
-        if started.elapsed() > Duration::from_secs(300) {
-            break;
         }
     }
     let _ = event(

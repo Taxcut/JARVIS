@@ -79,6 +79,15 @@ were incorrectly classified as fatal; a targeted correction and regression passe
 18 voice tests and Clippy. Physical retest remains required; the generic original
 error does not establish its exact underlying cause.
 
+2026-10-05: the owner confirmed a **complete spoken local answer** on the audio-fix
+build. The remaining follow-up/wake/stop matrix is pending. Hosted
+[Validate 37246216411](https://github.com/Taxcut/JARVIS/actions/runs/37246216411)
+passed all three platforms on `4c2c160ec297b389f7074bc924de052833ff0147`.
+Later recovery hardening restores the retry budget only after 30 seconds of healthy
+audio and reports exhausted retries accurately. The five-minute local conversation
+deadline now applies during generation and interruption waits. These changes need
+their own hosted/build evidence and physical retest.
+
 # Implementation status
 
 ## Phase 3 — COMPLETE for the current Mac scope; Windows physical acceptance intentionally deferred

@@ -200,6 +200,7 @@ struct Worker {
     greet_pending: bool,
     retry_at: Instant,
     failures: u32,
+    healthy_since: Option<Instant>,
     pending_speech: usize,
     voiced: u32,
     first_audio: bool,
@@ -250,6 +251,7 @@ impl Worker {
             greet_pending: false,
             retry_at: Instant::now(),
             failures: 0,
+            healthy_since: None,
             pending_speech: 0,
             voiced: 0,
             first_audio: false,
@@ -314,6 +316,7 @@ impl Worker {
         });
     }
     fn halt(&mut self) {
+        self.healthy_since = None;
         self.close();
         self.greet_pending = false;
         self.active.store(false, Ordering::Release);
@@ -333,16 +336,32 @@ impl Worker {
         if permission {
             self.failures = 5;
         }
+        let exhausted = format!(
+            "{} Automatic recovery paused. Choose Reconnect audio in Settings.",
+            message.split(" Reconnecting").next().unwrap_or(message)
+        );
         self.phase(
             if permission {
                 Phase::PermissionRequired
             } else {
                 Phase::Degraded
             },
-            message,
+            if !permission && self.failures >= 5 {
+                &exhausted
+            } else {
+                message
+            },
         );
         if permission {
             self.update(|s| s.permission = "REQUIRED".into());
+        }
+    }
+    fn healthy_tick(&mut self, now: Instant) {
+        let since = self.healthy_since.get_or_insert(now);
+        // Only sustained successful processing replenishes the retry budget.
+        // Brief reopen/fail loops stay capped; unrelated later failures can recover.
+        if now.saturating_duration_since(*since) >= Duration::from_secs(30) {
+            self.failures = 0;
         }
     }
     fn initialize(&mut self) -> Result<(), &'static str> {
@@ -896,8 +915,11 @@ impl Worker {
                         self.failure(e);
                     }
                 }
-            } else if let Err(e) = self.tick() {
-                self.failure(e);
+            } else {
+                match self.tick() {
+                    Ok(()) => self.healthy_tick(Instant::now()),
+                    Err(e) => self.failure(e),
+                }
             }
             std::thread::sleep(Duration::from_millis(10));
         }
@@ -929,6 +951,37 @@ pub fn take_sentence(buffer: &mut String, finish: bool) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    async fn recovery_budget_requires_sustained_health_and_reports_exhaustion() {
+        let status = Arc::new(Mutex::new(VoiceStatus::default()));
+        let (credentials, _requests) = async_channel::channel(1);
+        let mut worker = Worker::new(
+            Settings::default(),
+            Arc::new(|_| Ok(())),
+            credentials,
+            status.clone(),
+            Arc::new(AtomicBool::new(true)),
+            Arc::new(AtomicU64::new(0)),
+            Arc::new(AtomicBool::new(true)),
+            tokio::runtime::Handle::current(),
+        );
+        let now = Instant::now();
+        for _ in 0..5 {
+            worker.failure("Audio devices changed. Reconnecting…");
+            worker.healthy_tick(now);
+            worker.healthy_tick(now + Duration::from_secs(29));
+        }
+        assert_eq!(worker.failures, 5);
+        let message = status.lock().unwrap().message.clone();
+        assert!(message.contains("Automatic recovery paused"));
+        assert!(!message.contains("Reconnecting…"));
+        worker.healthy_tick(now + Duration::from_secs(30));
+        assert_eq!(worker.failures, 0);
+        worker.failure("Audio devices changed. Reconnecting…");
+        assert_eq!(worker.failures, 1);
+        assert!(worker.healthy_since.is_none());
+        assert!(status.lock().unwrap().message.contains("Reconnecting…"));
+    }
     #[tokio::test]
     async fn failed_settings_write_does_not_undo_mute_or_disable() {
         for mute in [false, true] {
