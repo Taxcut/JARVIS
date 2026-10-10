@@ -1,0 +1,22 @@
+[
+  {
+    "path": "sherpa-onnx-streaming-zipformer-en-2023-06-26/decoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+    "sha256": "780c63ee94c7cfa314211172e5d09b406c0da2beab5c40ea2f54cc95670b76a5"
+  },
+  {
+    "path": "sherpa-onnx-streaming-zipformer-en-2023-06-26/encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+    "sha256": "5022b2eca5b19d1bc104fcf33e26bc32604b7df553cd2e1f62e31dc7b05e9c87"
+  },
+  {
+    "path": "sherpa-onnx-streaming-zipformer-en-2023-06-26/joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+    "sha256": "abd5e30f3f16fc510605c6029dba33f10e4386bd75c5bdc30cf94076864db10d"
+  },
+  {
+    "path": "sherpa-onnx-streaming-zipformer-en-2023-06-26/test_wavs/0.wav",
+    "sha256": "6bc58a4efdf20daac252b6b1502632601a71efe0308f6757dc1eda34891a7e4f"
+  },
+  {
+    "path": "sherpa-onnx-streaming-zipformer-en-2023-06-26/tokens.txt",
+    "sha256": "49e3c2646595fd907228b3c6787069658f67b17377c60aeb8619c4551b2316fb"
+  }
+]

@@ -48,3 +48,10 @@ A minute maintenance pass expires pending approvals/enrollments with audit+sync 
 Registration, lease renewal and lifecycle events use the same advisory transaction lock and committed sync watermark. Stable heartbeats update current state and the existing 24-hour/approximately-10,000-event replay window. Only transitions/capability changes append runtime audit events. The maintenance pass marks an expired live row OFFLINE once and emits one expiry event; snapshot projection already treats expired leases as offline, even before maintenance. Revocation/expiry are checked independently of cleanup. New databases contain zero runtime rows; real owner state is never seeded by tests.
 
 `0004_runtime_report_constraint.sql` hardens the JSON constraint against SQL CHECK NULL semantics: the execution key must exist and equal the JSON boolean false, not a missing key or string. Readiness advances to version 5 without editing the already-applied migration. Integration tests verify all three invalid forms are rejected.
+
+## Phase 4 voice data boundary
+
+No voice migration is required. Audio and bounded live transcripts are transient
+native memory, not audit/event rows. Non-secret device voice preferences are stored
+privately beside runtime state. Provider secrets remain backend configuration.
+Core presence contains capability readiness only; it does not ingest transcripts.

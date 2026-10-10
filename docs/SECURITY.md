@@ -71,3 +71,96 @@ Startup is explicit and per-user: SMAppService with a bundled Aqua LaunchAgent o
 A malicious process already running as this OS user can interfere with this user's applications, replace user-writable binaries, deny IPC or access credentials according to OS policy. Same-user process compromise, OS administrators and database administrators remain outside the boundary. This limitation is explicit; local IPC is not an app-specific enclave. A crash between Core refresh rotation and secure-store persistence can require owner reconnection. Missing, denied or corrupt storage never falls back to a file. No private key, token, recovery value, provider secret, invasive inventory, microphone permission, screen capture or Accessibility grant is part of runtime diagnostics.
 
 Final installed-build validation encountered a macOS launch-constraint rejection after an earlier in-place bundle replacement, although on-disk signature verification passed. Unregistering, quitting and replacing the complete app bundle restored normal registration and authenticated startup. No Gatekeeper, SIP, launch constraint or Keychain protection was disabled. On-disk signature verification alone is not proof of successful startup; the acceptance check also verifies the actual managed process, protected IPC and current Core presence. Production signing and update delivery remain separate future work.
+
+## Phase 4 voice security review — validation in progress
+
+Voice is implemented on the feature branch, superseding the earlier future-voice
+statements for this checkpoint. Execution, telephony and remote computer control
+remain unavailable. Spoken content and provider text are untrusted: neither has a
+native action dispatcher, shell/file API or privileged tool. Core issues voice
+credentials only to the scoped runtime; React sees bounded status and transcript
+text, rendered as text rather than HTML. Provider credentials never enter React.
+
+Pre-wake audio stays local. Timestamp-limited post-keyword recovery feeds local STT. Default voice sends no
+audio to a cloud provider; false wakes may still trigger unwanted local turns.
+No speaker biometric authentication is implied. Capture/output and provider queues
+are bounded; mute/disable/revocation/suspend fence new capture, playback and queued
+network packets. A packet already sent cannot be revoked. Sessions expire locally;
+provider token expiry alone is not a live-connection cutoff. Cancellation is
+prioritized separately from buffered audio. Device loss has capped retries.
+
+Local IPC still requires the same user/verified pipe peer. Its narrow commands
+configure voice, retry, clear transient transcript or request a cooldown-controlled
+greeting; there is no arbitrary URL, text-to-speech text, filesystem or process
+execution command. A worst-case multibyte transcript/device-settings test verifies
+that status stays under the unchanged 16 KiB IPC budget. Audio, model results and
+settings reject non-finite/out-of-range data. Voice model/native archive hashes are
+pinned, models are outside Git and runtime loads reject symlinks.
+
+Provider error bodies and credentials are never logged. Native helper output is
+suppressed by the existing supervisor; no transcript crash reporting was added.
+Process memory can still contain active audio, credentials and text; operating-
+system crash dumps/debuggers are a residual local-access risk, not an application
+privacy guarantee. Six bounded transcript entries are memory-only. Settings contain
+no secrets. Tests and visual fixtures use isolated constant input only.
+
+Pending: real Mac wake/noise/barge-in/lifecycle acceptance, local STT/Qwen end-to-end acceptance and Windows physical privacy/voice checks. Automated
+passing tests do not close those requirements. See VOICE and IMPLEMENTATION_STATUS.
+
+Phase 4 microphone follow-up: macOS capture is gated by AVFoundation audio
+authorization before opening CPAL. Pending or denied permission leaves capture
+off. Denial requires owner correction in System Settings and an explicit retry;
+there is no TCC reset, database edit, security bypass or plaintext credential
+fallback. Audio diagnostics contain fixed error categories and aggregate levels,
+never samples or transcript text. The failed physical stop-listening attempt is
+recorded as unresolved, not treated as a privacy-control acceptance pass.
+
+Privacy-write failure follow-up: a mute/off request remains effective in memory
+even if saving settings fails. Capture stays off and an actionable warning remains
+visible; successful retry clears it. A regression test covers both mute and
+disable against a failing settings store. Pending startup speech is cancelled by
+privacy/lifecycle shutdown, and sound cues can remain enabled independently of
+the optional spoken greeting. Voice tests now total 13 on macOS.
+
+Local-default migration (2026-10-02): the owner requires local STT/Qwen/Kokoro;
+cloud audio must not be the normal path. Voice remains off during this migration.
+Current ONLINE/NORMAL authority requirements remain intact even when inference
+is local. Microphone packaging now includes the narrow signed audio-input
+entitlement in both native executables; hardened runtime remains enabled. The
+owner approved microphone access, and nonzero input was verified without storing
+audio or reading private transcripts. Physical stop/barge-in tests remain open.
+
+Local inference boundary: only pinned Qwen text inference at 127.0.0.1:11434 is
+used by default, with proxies/redirects disabled, no tools and bounded NDJSON,
+text, history and generation duration. Setup verifies release/archive/model-layer
+digests. A fixed per-user installed runtime can be restarted without exposing a
+process-launch command to React/IPC. The local service has no cross-user
+authentication enclave; same-user/administrator compromise is outside this
+boundary. Voice prompt injection cannot change policy or trigger execution.
+Cancellation epochs reject stale local model events as well as old TTS output.
+Clearing conversation drops local model history and visible transcript; transient
+model/GPU caches are not represented as securely zeroized memory.
+
+### Local-boundary source review — 2026-10-09
+
+Reviewed the local adapter, fixed runtime launcher, controller cancellation,
+settings validation and daemon authority gate at the 23d2259 checkpoint. The
+adapter disables proxies and redirects, accepts only the pinned model catalog
+entry, requests no tools and rejects nonempty returned tool calls. Response limits
+remain 512 KiB total, 64 KiB pending input, 16 KiB per line and 8192 bytes of text;
+history is bounded to six messages/6000 bytes. Idle, generation and session waits
+remain bounded. The daemon allows voice only while ONLINE with NORMAL security;
+authority loss and privacy controls invalidate playback generations. This source
+review does not replace physical interruption or sleep/resume acceptance.
+
+The launcher's verified setup marker is a bounded installation record, not an
+ongoing cryptographic attestation of the executable. Its fixed per-user executable
+and loopback service remain subject to the existing same-user compromise boundary.
+No new execution, provider, credential or permission surface was introduced by the
+product visual changes. Isolated screenshot baselines contain only synthetic test
+presentation, and are excluded from the production entry point. The candidate and
+reachable-history secret scan passed before the implementation checkpoint push.
+
+Actual Mac UI controls verified mute/off capture shutdown and runtime restart
+with owner Keychain approval. Uncorroborated spoken-test reports remain pending;
+voice was enabled for the new owner test after Core recovery on October 9.

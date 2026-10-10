@@ -137,3 +137,57 @@ For uninstall: disable login startup, stop runtime, quit the dashboard, then rem
 - Suspend/resume, lock/unlock and session transitions: stale sockets discarded, current auth checked, full resync and heartbeats resumed.
 - Verify revoked/expired credentials fail closed, lockdown remains visible, future capabilities unavailable and execution false.
 - Measure idle CPU/memory and inspect sanitized bounded logs on the physical PC. Hosted Windows tests do not substitute for these checks.
+
+## Phase 4 voice setup
+
+This supersedes earlier instructions that classify voice as future-only. Preserve
+existing owner identity, database, recovery codes and native secure storage.
+
+1. Run `pnpm voice:models`, `pnpm voice:stt-models` and
+   `pnpm voice:local-setup`. These explicitly verify/install wake, Kokoro, streaming
+   STT, Ollama and the pinned Qwen model in local user storage. Allow about 4 GB of
+   storage for active dependencies/models plus retained verified setup archives.
+   No OpenAI key or payment is required. Models are never tracked in Git.
+2. Run `pnpm voice:local-probe` to check the fixed synthetic local pipeline and
+   print measured timings. This is not physical microphone acceptance.
+3. Build/open the native app, connect the trusted runtime, select input/output,
+   and enable voice deliberately. Approve the OS microphone request if shown.
+4. Check real Jarvis/Hey Jarvis, immediate questions, partial/final transcripts,
+   Qwen responses, George output, interruption, mute and stop-listening. The
+   default conversation is processed locally; Core still supplies security state.
+5. Verify restart/resume/sleep/wake and model/device failure recovery. Missing
+   models or unperformed physical checks remain incomplete. The local model
+   runtime starts/restarts only from its fixed verified installation. It uses
+   loopback only, no cloud fallback, and unloads idle weights after two minutes.
+
+For local Mac validation the signed application bundle is built with
+`pnpm runtime:prepare --release && pnpm --filter @jarvis/desktop tauri build --bundles app`.
+The optional DMG decoration step failed during this checkpoint and is not claimed
+as validated. Developer ID/notarization is still separate distribution work. Never
+clear owner storage to resolve an ordinary build or voice setup problem.
+
+On macOS, enabling native voice may show a separate microphone dialog after
+Keychain approval. These permissions are distinct. JARVIS waits without capturing
+until macOS grants microphone access. If denied, enable JARVIS in System Settings
+→ Privacy & Security → Microphone, then choose Settings → Reconnect audio. Do not
+reset Keychain or TCC permissions as a workaround. A ready label is not a substitute
+for a spoken acceptance check. Model installation now verifies into a fresh private
+staging directory and retains the previous model directory for recovery.
+
+### Local-default transition (2026-10-02)
+
+The owner superseded the historical OpenAI default: paid API credit is
+**not required** for Prompt #4. Local streaming STT and Qwen setup are implemented; keep voice off until the
+local stack is installed and verified.
+Kokoro and wake models remain local. Historical provider setup is optional only.
+After building a Mac app, run `pnpm desktop:verify-macos` before installation.
+This checks the final desktop/helper audio-input entitlements, hardened-runtime
+flags, nested signature integrity and microphone usage description. The optional
+path argument checks an installed bundle. Do not work around missing entitlements
+by weakening macOS protections.
+
+Local runtime download recovery: `pnpm voice:local-setup --archive /absolute/path/to/archive`
+can reuse the exact platform release archive after an interrupted installation.
+Its pinned SHA-256 must still match; this is not a custom-runtime option. Windows
+uses the built-in System32 tar extractor, so the PowerShell Archive module is not
+required. Do not disable application control to run setup.

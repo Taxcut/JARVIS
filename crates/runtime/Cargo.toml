@@ -1,9 +1,10 @@
 [package]
 name = "jarvis-runtime"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.91"
 [dependencies]
+jarvis-voice = { path = "../voice" }
 jarvis-identity = { path = "../identity" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

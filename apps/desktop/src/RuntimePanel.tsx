@@ -1,3 +1,4 @@
+import { Notice } from './Notice.js';
 import { useEffect, useState } from 'react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { z } from 'zod';
@@ -105,8 +106,8 @@ export function RuntimePanel({
           {local ? local.state.replaceAll('_', ' ') : 'Runtime not running'}
         </h2>
         <p>
-          Your runtime stays active when this dashboard closes. Voice and
-          computer execution are unavailable.
+          Your runtime stays active when this dashboard closes. Voice runs here
+          when enabled. Computer execution remains unavailable.
         </p>
         {!isTauri() ? (
           <p>Open the native JARVIS desktop to manage this device’s runtime.</p>
@@ -192,37 +193,8 @@ export function RuntimePanel({
             </p>
           </>
         )}
-        {diagnostics && local && (
-          <dl>
-            <dt>Runtime version / instance</dt>
-            <dd>
-              {local.runtimeVersion} / {local.instanceId}
-            </dd>
-            <dt>Started</dt>
-            <dd>{new Date(local.startedAt).toLocaleString()}</dd>
-            <dt>Last Core connection</dt>
-            <dd>
-              {local.lastConnectedAt
-                ? new Date(local.lastConnectedAt).toLocaleString()
-                : 'Not connected'}
-            </dd>
-            <dt>Last heartbeat</dt>
-            <dd>
-              {local.lastHeartbeatAt
-                ? new Date(local.lastHeartbeatAt).toLocaleString()
-                : 'Not reported'}
-            </dd>
-            <dt>Reconnect attempt / wake generation</dt>
-            <dd>
-              {local.reconnectAttempt} / {local.wakeGeneration}
-            </dd>
-            <dt>OS lifecycle observer</dt>
-            <dd>{local.platformObserver ? 'Available' : 'Unavailable'}</dd>
-            <dt>Last error</dt>
-            <dd>{local.lastError ?? 'None'}</dd>
-          </dl>
-        )}
-        <div role="status">{error && <p className="error">{error}</p>}</div>
+        {diagnostics && local && <RuntimeDiagnostics local={local} />}
+        <Notice message={error} />
         {snapshot?.devices.map((device) => {
           const presence = snapshot.runtimePresence?.find(
             (r) => r.deviceId === device.id,
@@ -264,5 +236,39 @@ export function RuntimePanel({
         })}
       </div>
     </section>
+  );
+}
+
+/** Read-only rendering, shared with isolated visual checks. */
+export function RuntimeDiagnostics({ local }: { local: Local }) {
+  return (
+    <dl className="runtime-diagnostics">
+      <dt>Runtime version / instance</dt>
+      <dd>
+        {local.runtimeVersion} / {local.instanceId}
+      </dd>
+      <dt>Started</dt>
+      <dd>{new Date(local.startedAt).toLocaleString()}</dd>
+      <dt>Last Core connection</dt>
+      <dd>
+        {local.lastConnectedAt
+          ? new Date(local.lastConnectedAt).toLocaleString()
+          : 'Not connected'}
+      </dd>
+      <dt>Last heartbeat</dt>
+      <dd>
+        {local.lastHeartbeatAt
+          ? new Date(local.lastHeartbeatAt).toLocaleString()
+          : 'Not reported'}
+      </dd>
+      <dt>Reconnect attempt / wake generation</dt>
+      <dd>
+        {local.reconnectAttempt} / {local.wakeGeneration}
+      </dd>
+      <dt>OS lifecycle observer</dt>
+      <dd>{local.platformObserver ? 'Available' : 'Unavailable'}</dd>
+      <dt>Last error</dt>
+      <dd>{local.lastError ?? 'None'}</dd>
+    </dl>
   );
 }

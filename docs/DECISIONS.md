@@ -102,3 +102,74 @@ During final review, strengthen the report CHECK with an explicit key-existence/
 The final installed app uses a fresh complete bundle replacement: the earlier in-place update was rejected by macOS launch constraints despite passing on-disk signature verification. Unregister, quit, replace the stopped bundle and register again restored authenticated startup through SMAppService; no OS security or secure-storage bypass was used. The runtime remains ONLINE with startup ENABLED and the same trusted device. Dashboard quit/reopen again preserved its instance. Keep this distinction in setup/security guidance rather than claiming signature verification alone proves launchability.
 
 Windows physical acceptance remains intentionally deferred, with a Gaming PC checklist. Full Mac reboot/login was not forced; actual supported startup registration/launch/unregister/re-registration and naturally occurring sleep/wake were verified. Core/PostgreSQL supervision, production signing/notarization and delivery remain later work. Node 20 action deprecation warnings are non-blocking future maintenance. The owner has no remaining interactive action for this Mac closure; PR review/merge is a separate decision.
+
+## Phase 4 implementation checkpoint — 2026-09-29
+
+Prompt #4 is authorized on `feat/phase4-voice-cinematic`. The native runtime owns
+CPAL capture/playback, sherpa-onnx wake detection, echo processing and local
+Kokoro `bm_george` synthesis. Fresh installs keep voice disabled. Core brokers
+short-lived Realtime credentials only to signed, currently trusted runtime
+sessions in NORMAL security state; durable provider keys stay in backend setup.
+Provider responses are text, with no tools or execution interface. The native
+runtime sends conversation audio only after recognized wake activation.
+
+Runtime protocol 2 adds truthful voice/capture capability reporting and rejects
+old runtime registrations with update-required. Computer execution and all other
+future control capabilities remain unavailable. No new application data is seeded.
+
+The pinned Kokoro archive README documents 54 speakers (Spanish `em_santa` added
+at index 53); existing indices are unchanged, including George at 26. British
+pronunciation uses the supplied GB lexicon, avoiding a language override that
+failed in the packaged eSpeak build. The single terminal keyword `Jarvis`
+accepts both requested wake phrases; overlapping prefix/suffix rules caused
+missed synthetic detections and were removed. Stop-listening has a separate
+local keyword stream. See PHASE4_WORKLOG for acceptance still outstanding.
+
+## Phase 4 refinement checkpoint (2026-09-30, acceptance still open)
+
+- Preserve the approved holographic J master; use a simplified monochrome angular
+  J for the native tray rather than shrinking the detailed master beyond legibility.
+  Original line glyphs replace font-dependent navigation symbols.
+- Keep input transcription partial/final state explicit. Native capture authority
+  gates queued uploads as well as callbacks; provider cancellation has a separate
+  bounded priority channel. Physical barge-in remains an acceptance test.
+- Poll selected/default device identity every two seconds for hotplug recovery;
+  reject non-finite capture/playback samples and bound transcript UTF-8 bytes so
+  the complete status reply remains within the existing private IPC limit.
+- Original additive sound cues use native volume/mute settings. Startup can be
+  full/reduced/off, and system reduced motion cannot be overridden by the app.
+  Ready state wins over animation. No new native execution command was introduced.
+- Mac Kokoro uses four CPU inference threads after the fixed-phrase comparison
+  improved synthesis from roughly 4.1 to 3.35 seconds for 3.12 seconds of audio.
+  One-thread output was rejected as invalid. Windows stays at two pending local
+  measurement. This is not a claim of acceptable end-to-end conversational latency.
+- Preserve the first checkpoint's successful hosted Linux/macOS/Windows run
+  36683188583 on 18d922b. Subsequent implementation changes require fresh CI.
+  Owner API billing still blocks live Realtime acceptance; do not infer a fix
+  from the owner's request to continue after a model-usage reset.
+
+## Physical microphone follow-up (2026-10-01)
+
+A real owner stop-listening attempt had no response. Do not infer microphone
+authorization solely from successful Core Audio stream construction. Follow
+[Apple's authorization API](<https://developer.apple.com/documentation/AVFoundation/AVCaptureDevice/authorizationStatus(for:)>)
+with asynchronous audio-only permission prompting before capture. Native runtime
+identity remains unchanged. Distinguish buffer/device/callback failures without
+logging samples. A short authority interruption invalidates the stream; recovery
+reopens it through current authorization rather than leaving a disabled callback
+behind an apparently active status. Physical success still requires owner evidence.
+
+## Local default supersedes paid Realtime (2026-10-02)
+
+The owner explicitly requires local sherpa-onnx streaming STT, a local Qwen3 4B
+Instruct-class conversation model and Kokoro bm_george as the normal voice path.
+OpenAI billing is no longer an acceptance blocker; any retained cloud adapter is
+optional and cannot silently activate. The existing current Core/identity/NORMAL
+authority fence remains mandatory, including for local conversation. No tools or
+execution authority are added. Runtime choice and performance require measurement
+on the current 8 GB Mac and supported Windows environment.
+
+macOS microphone packaging requires both usage-description metadata and the
+signed `com.apple.security.device.audio-input` entitlement on desktop and helper.
+Keep hardened runtime enabled and verify the final nested signatures. The owner
+approved the resulting real microphone request; do not reset TCC/Keychain.

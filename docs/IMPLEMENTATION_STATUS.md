@@ -1,3 +1,116 @@
+# Phase 4 — in progress
+
+Prompt #4 is authorized and underway. See [PHASE4_WORKLOG](PHASE4_WORKLOG.md)
+for current implementation and verification boundaries. Historical Phase 1–3
+evidence below remains valid; it does not imply Phase 4 acceptance.
+
+## Latest verification — 2026-10-09
+
+Phase 4 remains incomplete; PR #4 is draft and unmerged. The visual follow-up
+adds five reviewed isolated product baselines (settings, compact settings,
+diagnostics, model loading and confirmation), all passing independent capture
+comparison. Reduced-motion rendering now invalidates its cached frame after
+resize and visibility changes; resize/re-capture passed. Formatting, lint,
+type checks, all 50 TypeScript tests and production builds passed.
+
+On October 5, actual native controls verified mute/unmute and voice off; runtime
+stop/start recovered ONLINE after owner Keychain approval. This is not unattended
+restart or sleep/resume evidence. Later affirmative spoken-test reports could not
+be reconciled with zero runtime wakes and no first-token/audio measurements; those
+multi-turn, interruption and spoken-stop checks remain unverified. The owner could
+not recall the window/device. On October 9, restoring Core recovered ONLINE local
+wake listening with microphone granted and nonzero input. A fresh single spoken
+stop check is pending. No transcripts or credentials are included in this evidence.
+
+## Current Phase 4 checkpoint — 2026-10-04
+
+Draft [PR #4](https://github.com/Taxcut/JARVIS/pull/4) remains unmerged on
+`feat/phase4-voice-cinematic`. Phase 4 is **not complete**. Prompt #5 has not started.
+The first implementation checkpoint `18d922bbc606177779c97e315b3541bd05ef140e`
+passed [Validate 36683188583](https://github.com/Taxcut/JARVIS/actions/runs/36683188583):
+Linux TypeScript/PostgreSQL, macOS native and Windows native jobs all succeeded.
+Validate 36836908811 also passed Linux/macOS/Windows on aba5cf9. Later changes require their own hosted evidence.
+
+Current local refinements pass all 50 TypeScript tests plus formatting, lint,
+strict types and builds; full native Clippy and 28 Rust tests pass (the existing
+physical credential-store test remains intentionally ignored). Six separately
+captured deterministic visual states compare exactly to reviewed 1024×768 Mac
+baselines. Fixtures are isolated from the production entry and contain no owner
+information. The earlier 19 PostgreSQL integration tests remain applicable; no
+Core/database behavior changed in this refinement.
+
+The owner approved the rebuilt helper's Keychain dialog. Native dashboard quit
+and reopen preserved the running supervisor/worker and restored LIVE identity;
+private IPC confirmed ONLINE with no cloud audio. However, the owner's real
+“Jarvis, stop listening” attempt produced **no response**. Input telemetry stayed
+zero and a subsequent device failure was observed. This is a failed/pending
+physical check, not successful wake acceptance. The correction adds explicit
+macOS AVFoundation authorization, asynchronous permission waiting, distinct audio
+buffer failures, a stopped-callback watchdog and recovery from brief authority
+loss. A synthetic resampler/echo-cancellation test preserves near-end input;
+it does not prove physical microphone capture. The next bundle correction added the missing signed audio-input entitlement
+to both desktop and helper while retaining hardened runtime. The owner approved
+Keychain and the microphone dialog; native status then showed GRANTED, nonzero
+input, wake/TTS models ready and ONLINE. Spoken stop, conversation and barge-in
+acceptance remain pending. Voice is now deliberately off during the local migration.
+
+The owner superseded the cloud-default design on 2026-10-02. Default voice now
+uses local sherpa streaming STT → local pinned Qwen3 4B Instruct via Ollama →
+Kokoro. No paid API is required; the historical cloud credit error is not a blocker.
+The local synthetic pipeline passed, including streamed text and first-sentence
+synthesis. Latest sample: STT load 1.17 s, decode 133 ms for 3.6 s of audio, first
+partial at 780 ms of audio; Qwen first token 1.16 s and first sentence ready for
+playback 5.71 s after STT. These are synthetic measurements, not live conversational
+acceptance. The recognized homophone “too” instead of “two” was sent unchanged to
+Qwen; accuracy and overly cautious wording still need a real owner review.
+
+The changed stack passes 50 TypeScript tests/static/build checks, 19 isolated
+PostgreSQL integration tests, workspace Clippy and 33 native tests (17 voice;
+one separate physical credential-store test remains ignored). Hosted [Validate 37088715100](https://github.com/Taxcut/JARVIS/actions/runs/37088715100)
+passed all Linux/macOS/Windows jobs on `e8ea51a62f9d732ae133cb8d97a41be7ff58022b`.
+Subsequent product/setup refinements require their own hosted check. All original Prompt #4 gates
+remain applicable unless explicitly superseded by the local-default decision.
+See [PHASE4_ACCEPTANCE](PHASE4_ACCEPTANCE.md) for open work. Voice remained off
+while the owner was in class. The owner has now authorized audible testing again.
+Core and the native owner connection were rechecked healthy after the reported
+laptop power interruption; this does not itself prove a full reboot acceptance test.
+
+Real Windows Clippy, 32 native tests, native build and STT/model installation passed.
+The pinned runtime installer now uses Windows tar because the PowerShell archive
+module was blocked by existing OS policy; no protection was disabled. A repeated
+silent STT → Qwen → Kokoro probe passed: STT load 1639 ms, decode 121 ms, first
+partial at 780 ms of source audio, Qwen first token 2957 ms, first sentence ready
+6488 ms after STT. The initial cold probe failed its arithmetic response check
+after dropping part of the spoken question, with a 49121 ms first token. Preserve
+that reliability/performance finding; a successful repeat is not physical voice
+acceptance or proof that cold-start performance is resolved.
+
+Protected security changes now explain their consequence and reversibility in a
+keyboard-accessible confirmation before the existing passkey verification. Isolated
+UI checks confirmed Cancel focus, Escape without dispatch, trigger focus restoration
+and exactly one confirmed dispatch. Production identity mutations were not exercised.
+
+The installed local build restored ONLINE after owner Keychain/microphone approval,
+with real input and wake/STT/TTS readiness. Native model first-token telemetry
+advanced, but an audio retry failure interrupted acceptance. CPAL advisory events
+were incorrectly classified as fatal; a targeted correction and regression passed
+18 voice tests and Clippy. Physical retest remains required; the generic original
+error does not establish its exact underlying cause.
+
+2026-10-05: the owner confirmed a **complete spoken local answer** on the audio-fix
+build. The remaining follow-up/wake/stop matrix is pending. Hosted
+[Validate 37246216411](https://github.com/Taxcut/JARVIS/actions/runs/37246216411)
+passed all three platforms on `4c2c160ec297b389f7074bc924de052833ff0147`.
+Later recovery hardening restores the retry budget only after 30 seconds of healthy
+audio and reports exhausted retries accurately. The five-minute local conversation
+deadline now applies during generation and interruption waits. The signed Mac bundle was rebuilt, verified and installed.
+[Validate 37289240260](https://github.com/Taxcut/JARVIS/actions/runs/37289240260)
+passed Linux/macOS/Windows on `12bc370e9f519741fbf5c0fc6021aad39e9771c5`.
+All 19 voice tests and voice Clippy also passed on the real Mac and Windows machines.
+A repeated silent Windows local pipeline passed (first token 4129 ms; first sentence
+ready 6886 ms after STT). Start-at-login is enabled. The new Mac helper is awaiting
+owner Keychain approval with capture off; physical retesting remains pending.
+
 # Implementation status
 
 ## Phase 3 — COMPLETE for the current Mac scope; Windows physical acceptance intentionally deferred

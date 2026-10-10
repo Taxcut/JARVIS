@@ -152,3 +152,27 @@ The development app rendered through the loopback Vite server. The release app r
 Start runtime launched one supervisor/worker pair. Closing the dashboard left the same pair alive; reopening the release dashboard rediscovered it. The runtime reported AUTH_REQUIRED after normal desktop initialization of its local Credential Manager identity, with no authenticated Core session. No existing enrollment was replaced and no Mac identity was imported. Stop runtime through the desktop stopped both processes. All temporary development-server processes were stopped. Per-user startup was restored to disabled after validation.
 
 The installed release helper also launched after the September 29 reboot from the protected installation path as exactly one supervisor/worker pair. It reported AUTH_REQUIRED, and the desktop Stop runtime control stopped both processes. Startup remained disabled.
+
+## Phase 4 remote validation checkpoint
+
+Standard-user SSH fetched `feat/phase4-voice-cinematic` at 18d922b. Verified native
+sherpa-onnx assets and `cargo check -p jarvis-voice -p jarvis-runtime --locked`
+succeeded on the Gaming PC, including CPAL, Kokoro/sherpa, echo processing and TLS.
+Hosted Validate 36683188583 independently passed full Windows native tests/builds.
+
+Local `pnpm install --frozen-lockfile` encountered Windows error 448 while reading
+the esbuild package through an untrusted dependency junction. Preserve the earlier
+RedirectionGuard diagnostic and trusted-link recovery procedure. No SAC, Defender,
+UAC or RedirectionGuard setting was weakened. This is not a local TypeScript pass.
+Additional native application/model checks and physical Windows enrollment/audio
+acceptance remain explicitly pending. Do not import the Mac identity to Windows.
+
+### Phase 4 local voice continuation
+
+The 2026-10-02 local default requires sherpa streaming STT and pinned local Qwen
+in addition to existing wake/Kokoro. `pnpm voice:local-setup` supports the pinned
+Windows x64 Ollama archive, loopback-only service and the same Qwen digest; it
+never changes Defender, Firewall, Smart App Control or RedirectionGuard. Existing
+9a242d3 native build/28-test evidence predates this change. Updated Windows local
+inference and native build validation remain pending; physical microphone and
+owner enrollment are separate. Remote availability has resumed.

@@ -115,6 +115,7 @@ export class IdentityService {
             'POST /api/v1/runtime/register',
             'POST /api/v1/runtime/heartbeat',
             'POST /api/v1/runtime/stop',
+            'POST /api/v1/voice/session',
           ]).has(`${method} ${path}`)
         )
           deny('RUNTIME_SCOPE_REQUIRED', 403);

@@ -7,6 +7,10 @@ const postgresUrl = z
     'Expected PostgreSQL URL',
   );
 export const environmentSchema = z.object({
+  OPENAI_API_KEY: z.string().min(10).max(512).optional(),
+  JARVIS_REALTIME_MODEL: z
+    .enum(['gpt-realtime-2.1', 'gpt-realtime', 'gpt-realtime-mini'])
+    .default('gpt-realtime-2.1'),
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),

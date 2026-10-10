@@ -14,7 +14,7 @@ const setup = {
   core: 'not_configured',
   owner: 'not_implemented',
   deviceEnrollment: 'not_implemented',
-  voice: 'not_implemented',
+  voice: 'device_setup_required',
   phoneLink: 'not_implemented',
   security: 'setup_required',
   systemTest: 'not_implemented',
@@ -79,7 +79,7 @@ it('returns authentic initial setup, version and successful readiness', async ()
   ).toBe(200);
   expect(
     (await app.inject({ url: '/api/v1/system/version', headers })).json(),
-  ).toMatchObject({ protocolVersion: 1, phase: 3 });
+  ).toMatchObject({ protocolVersion: 1, phase: 4 });
 });
 it('generates request IDs, propagates valid correlation, and gives structured errors', async () => {
   const { app } = await make();

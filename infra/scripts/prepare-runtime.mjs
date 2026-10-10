@@ -1,3 +1,4 @@
+import './verify-voice-native.mjs';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
