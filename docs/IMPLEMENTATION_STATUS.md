@@ -4,6 +4,24 @@ Prompt #4 is authorized and underway. See [PHASE4_WORKLOG](PHASE4_WORKLOG.md)
 for current implementation and verification boundaries. Historical Phase 1–3
 evidence below remains valid; it does not imply Phase 4 acceptance.
 
+## Latest verification — 2026-10-09
+
+Phase 4 remains incomplete; PR #4 is draft and unmerged. The visual follow-up
+adds five reviewed isolated product baselines (settings, compact settings,
+diagnostics, model loading and confirmation), all passing independent capture
+comparison. Reduced-motion rendering now invalidates its cached frame after
+resize and visibility changes; resize/re-capture passed. Formatting, lint,
+type checks, all 50 TypeScript tests and production builds passed.
+
+On October 5, actual native controls verified mute/unmute and voice off; runtime
+stop/start recovered ONLINE after owner Keychain approval. This is not unattended
+restart or sleep/resume evidence. Later affirmative spoken-test reports could not
+be reconciled with zero runtime wakes and no first-token/audio measurements; those
+multi-turn, interruption and spoken-stop checks remain unverified. The owner could
+not recall the window/device. On October 9, restoring Core recovered ONLINE local
+wake listening with microphone granted and nonzero input. A fresh single spoken
+stop check is pending. No transcripts or credentials are included in this evidence.
+
 ## Current Phase 4 checkpoint — 2026-10-04
 
 Draft [PR #4](https://github.com/Taxcut/JARVIS/pull/4) remains unmerged on

@@ -316,3 +316,30 @@ Hosted [Validate 37289240260](https://github.com/Taxcut/JARVIS/actions/runs/3728
 completed successfully on 12bc370e9f519741fbf5c0fc6021aad39e9771c5 with Linux, macOS
 and Windows jobs all successful. The following evidence commit is documentation
 only. Phase 4 remains incomplete and PR #4 remains draft/unmerged.
+
+## Product verification continuation — 2026-10-09
+
+Preserved the October 5 checkpoint. Native mute/unmute/off and stop/start were
+observed through UI plus allowlisted IPC; restart required owner Keychain approval.
+The subsequent spoken-test affirmative reports conflicted with zero wake count,
+no latency readings and voice still enabled. These remain unverified, not passed;
+the owner could not recall the window/device used. No private conversation was
+copied. Core was restored on continuation and native wake listening recovered.
+
+Extracted the existing runtime diagnostics into a pure presentation component for
+isolated coverage, improved its label/value spacing and wrapping, and made the
+protected-action confirmation primary button visually distinct. Existing passkey
+authority and cancellation behavior are unchanged. Five product baseline captures
+contain only isolated fixtures, never owner identity or operational records.
+
+The loading-screen repeat exposed an empty particle canvas. Resize can clear the
+WebGL buffer even when rounded dimensions are unchanged, so reduced-motion cache
+invalidation now follows every resize and visibility change. Fresh loading capture
+and a 1024→900→1024 resize/re-capture passed against the reviewed baseline; all five
+product comparisons pass. Capture must use visual.vite.config.ts for bundled fonts.
+The first resumed server omitted that config; its font-mismatched capture was
+rejected rather than accepted as a replacement baseline.
+
+Full pnpm check passed (format, lint, types, 50 tests, builds). Existing Three chunk
+size warning remains non-blocking. Native physical voice, sleep/resume, final
+performance/security and remaining acceptance-ledger items are still open.

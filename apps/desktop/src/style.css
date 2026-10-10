@@ -1709,3 +1709,36 @@ nav button {
     animation: none;
   }
 }
+
+.runtime-diagnostics {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(0, 1.7fr);
+  gap: 14px 24px;
+  margin: 24px 0 0;
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+.runtime-diagnostics dt {
+  color: var(--muted);
+}
+.runtime-diagnostics dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.confirmation-dialog .actions button {
+  margin: 0;
+}
+.confirmation-dialog .primary {
+  background: var(--cyan);
+  color: #092331;
+  border-color: #c7f2f7;
+}
+@media (max-width: 760px) {
+  .runtime-diagnostics {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .runtime-diagnostics dt:not(:first-child) {
+    margin-top: 12px;
+  }
+}

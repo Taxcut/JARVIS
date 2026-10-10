@@ -3,20 +3,22 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import jpeg from 'jpeg-js';
 const capture = process.argv[2];
+const product = process.argv.includes('--product');
 if (!capture)
   throw new Error(
-    'Provide the directory containing the six fresh fixture-STATE.jpg captures.',
+    'Provide the directory containing fresh fixture-STATE.jpg captures, or product-STATE.jpg with --product.',
   );
 let failed = false;
-for (const state of [
-  'idle',
-  'listening',
-  'thinking',
-  'speaking',
-  'alert',
-  'offline',
-]) {
-  const file = `fixture-${state}.jpg`;
+for (const state of product
+  ? [
+      'diagnostics',
+      'settings',
+      'model-loading',
+      'compact-settings',
+      'confirmation',
+    ]
+  : ['idle', 'listening', 'thinking', 'speaking', 'alert', 'offline']) {
+  const file = `${product ? 'product' : 'fixture'}-${state}.jpg`;
   const decode = async (path) =>
     jpeg.decode(await readFile(path), {
       useTArray: true,

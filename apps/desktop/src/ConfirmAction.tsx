@@ -55,6 +55,7 @@ export function ConfirmAction({
             Cancel
           </button>
           <button
+            className="primary"
             disabled={disabled}
             onClick={() => {
               close();

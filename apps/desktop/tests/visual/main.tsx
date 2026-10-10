@@ -4,12 +4,21 @@ import { createRoot } from 'react-dom/client';
 import { IntelligenceBody, type BodyState } from '../../src/IntelligenceBody';
 import '../../src/style.css';
 import { VoiceExperience, VoiceSettings } from '../../src/VoiceExperience';
+import { RuntimeDiagnostics } from '../../src/RuntimePanel';
 import { ConfirmAction } from '../../src/ConfirmAction';
 import type { VoiceStatus, VoicePhase } from '@jarvis/protocol';
 import type { Voice } from '../../src/use-voice';
-const view = new URLSearchParams(location.search).get('view') ?? 'body';
+const query = new URLSearchParams(location.search);
+const view = query.get('view') ?? 'body';
+// Isolated origin only: deterministic motion, without changing native preferences.
+localStorage.setItem(
+  'jarvis.visualPreferences',
+  JSON.stringify({ quality: 'HIGH', startup: 'off', reducedMotion: true }),
+);
 function ProductFixture() {
-  const [phase, setPhase] = useState<VoicePhase>('STARTING');
+  const [phase, setPhase] = useState<VoicePhase>(
+    (query.get('phase') ?? 'STARTING') as VoicePhase,
+  );
   const [confirmed, setConfirmed] = useState(0);
   const [settings, setSettings] = useState({
     enabled: true,
@@ -26,7 +35,9 @@ function ProductFixture() {
     version: 1,
     phase,
     settings,
-    microphone: phase === 'WAKE_ONLY',
+    microphone: ['WAKE_ONLY', 'LISTENING', 'THINKING', 'SPEAKING'].includes(
+      phase,
+    ),
     cloudAudio: false,
     wakeReady: true,
     ttsReady: true,
@@ -40,8 +51,8 @@ function ProductFixture() {
         ? 'Loading the local conversation model. Your workspace remains available.'
         : 'Local voice processing enabled.',
     inputLevel: 0,
-    outputLevel: 0,
-    outputBands: [0, 0, 0],
+    outputLevel: phase === 'SPEAKING' ? 0.18 : 0,
+    outputBands: phase === 'SPEAKING' ? [0.07, 0.15, 0.04] : [0, 0, 0],
     transcripts: [],
     generation: 0,
     wakeCount: 0,
@@ -68,6 +79,33 @@ function ProductFixture() {
       </header>
       {view === 'settings' ? (
         <VoiceSettings voice={voice} />
+      ) : view === 'diagnostics' ? (
+        <section className="panel identity-panel">
+          <div className="eyebrow">BACKGROUND RUNTIME</div>
+          <h2>Diagnostics</h2>
+          <p>Isolated offline fixture. No operational data.</p>
+          <RuntimeDiagnostics
+            local={{
+              version: 1,
+              instanceId: '00000000-0000-4000-8000-000000000000',
+              runtimeVersion: '0.4.0',
+              state: 'OFFLINE',
+              startedAt: '2026-01-01T12:00:00Z',
+              lastConnectedAt: null,
+              lastHeartbeatAt: null,
+              deviceId: null,
+              startup: 'DISABLED',
+              wakeGeneration: 0,
+              reconnectAttempt: 0,
+              lastError:
+                'Core is unavailable. Check the connection and reconnect.',
+              securityState: null,
+              syncSequence: '0',
+              platformObserver: true,
+              executionAvailable: false,
+            }}
+          />
+        </section>
       ) : view === 'confirmation' ? (
         <>
           <ConfirmAction
@@ -92,6 +130,9 @@ function ProductFixture() {
               {[
                 'STARTING',
                 'WAKE_ONLY',
+                'LISTENING',
+                'THINKING',
+                'SPEAKING',
                 'PERMISSION_REQUIRED',
                 'DEGRADED',
                 'LOCKDOWN',

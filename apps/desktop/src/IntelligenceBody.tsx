@@ -157,9 +157,16 @@ export function IntelligenceBody({
       scene.add(ring);
       rings.push(ring);
     }
+    let lastStatic = '';
+    const invalidate = () => {
+      lastStatic = '';
+      delete el.dataset.renderedState;
+    };
     const resize = new ResizeObserver(() => {
       const w = el.clientWidth,
         h = el.clientHeight;
+      // setSize clears the drawing buffer, even when rounded dimensions match.
+      invalidate();
       renderer.setSize(w, h);
       camera.aspect = w / Math.max(h, 1);
       camera.updateProjectionMatrix();
@@ -169,12 +176,12 @@ export function IntelligenceBody({
       last = 0,
       time = 0,
       smoothed = 0,
-      visible = true,
-      lastStatic = '';
+      visible = true;
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry?.isIntersecting ?? false;
     });
     observer.observe(el);
+    document.addEventListener('visibilitychange', invalidate);
     const draw = (now: number) => {
       frame = requestAnimationFrame(draw);
       if (
@@ -230,6 +237,7 @@ export function IntelligenceBody({
       cancelAnimationFrame(frame);
       resize.disconnect();
       observer.disconnect();
+      document.removeEventListener('visibilitychange', invalidate);
       renderer.domElement.removeEventListener('webglcontextlost', lost);
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());
