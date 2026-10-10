@@ -140,3 +140,27 @@ boundary. Voice prompt injection cannot change policy or trigger execution.
 Cancellation epochs reject stale local model events as well as old TTS output.
 Clearing conversation drops local model history and visible transcript; transient
 model/GPU caches are not represented as securely zeroized memory.
+
+### Local-boundary source review — 2026-10-09
+
+Reviewed the local adapter, fixed runtime launcher, controller cancellation,
+settings validation and daemon authority gate at the 23d2259 checkpoint. The
+adapter disables proxies and redirects, accepts only the pinned model catalog
+entry, requests no tools and rejects nonempty returned tool calls. Response limits
+remain 512 KiB total, 64 KiB pending input, 16 KiB per line and 8192 bytes of text;
+history is bounded to six messages/6000 bytes. Idle, generation and session waits
+remain bounded. The daemon allows voice only while ONLINE with NORMAL security;
+authority loss and privacy controls invalidate playback generations. This source
+review does not replace physical interruption or sleep/resume acceptance.
+
+The launcher's verified setup marker is a bounded installation record, not an
+ongoing cryptographic attestation of the executable. Its fixed per-user executable
+and loopback service remain subject to the existing same-user compromise boundary.
+No new execution, provider, credential or permission surface was introduced by the
+product visual changes. Isolated screenshot baselines contain only synthetic test
+presentation, and are excluded from the production entry point. The candidate and
+reachable-history secret scan passed before the implementation checkpoint push.
+
+Actual Mac UI controls verified mute/off capture shutdown and runtime restart
+with owner Keychain approval. Uncorroborated spoken-test reports remain pending;
+voice was enabled for the new owner test after Core recovery on October 9.
