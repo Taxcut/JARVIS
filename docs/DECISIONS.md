@@ -173,3 +173,14 @@ macOS microphone packaging requires both usage-description metadata and the
 signed `com.apple.security.device.audio-input` entitlement on desktop and helper.
 Keep hardened runtime enabled and verify the final nested signatures. The owner
 approved the resulting real microphone request; do not reset TCC/Keychain.
+
+## Phase 4 validation refinements — 2026-10-10
+
+Local model persona explicitly limits answers to conversation/general knowledge;
+it must not offer live weather, reminders, calendar access or computer control.
+This improves wording but is not a security boundary: tools and execution remain
+unavailable independently of generated text. Runtime UI uses a real initial
+checking state instead of briefly claiming the helper is stopped. Local voice
+setup guidance is an expandable native section; enabling voice and OS microphone
+permission remain explicit. Fixed synthetic resource probes are separate from
+owner physical acceptance; measured cold-start latency remains documented.

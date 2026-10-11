@@ -294,6 +294,38 @@ export function VoiceSettings({ voice }: { voice: Voice }) {
           }
         </p>
       )}
+      <details className="voice-setup-guide">
+        <summary>Set up and test local voice</summary>
+        <ol>
+          <li>
+            Choose your microphone and speaker below. Start with System default.
+          </li>
+          <li>
+            Enable voice on Core, then allow microphone access if your system
+            asks.
+          </li>
+          <li>
+            Wake detection, speech recognition and the George voice need their
+            verified local models. Missing or damaged models need local setup
+            repair; reconnecting alone does not download them. Qwen loads on
+            your first question, so the first answer can take longer.
+          </li>
+          <li>
+            When Core says “Say Jarvis,” say “Jarvis, what is two plus two?”
+            Check the transcript and listen for the complete answer. Try a
+            follow-up without saying the wake phrase again.
+          </li>
+          <li>
+            Say “Jarvis, stop listening” and confirm “Voice is off.” You can
+            also use Turn voice off or Mute microphone at any time.
+          </li>
+        </ol>
+        <p className="hint">
+          Voice processing is local. A trusted connection to your Core is still
+          required. No paid voice account is needed, and voice stays off on a
+          fresh installation until you enable it.
+        </p>
+      </details>
       {s ? (
         <div className="settings-grid">
           <label>

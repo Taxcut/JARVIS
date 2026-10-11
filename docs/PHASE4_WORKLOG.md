@@ -343,3 +343,56 @@ rejected rather than accepted as a replacement baseline.
 Full pnpm check passed (format, lint, types, 50 tests, builds). Existing Three chunk
 size warning remains non-blocking. Native physical voice, sleep/resume, final
 performance/security and remaining acceptance-ledger items are still open.
+
+## Final product/validation continuation — 2026-10-10
+
+The owner clarified that continuation requests mean persistent work, not a stop at
+each checkpoint. Preserved prior evidence and completed another coherent set:
+
+- Added in-app expandable local voice setup/test guidance without auto-enabling
+  voice, downloading models implicitly or introducing privileged commands.
+- Native review found glossy WebKit select controls; consistent appearance now
+  retains native select semantics, keyboard operation and explicit focus styles.
+- Fixed the runtime panel's initial false "not running"/"not configured" flash.
+  It now says Checking runtime until an actual result arrives; failed reads show
+  unavailable and disable controls until polling recovers.
+- Tightened the local persona after observed capability overclaiming. Three fixed
+  synthetic prompts now state the lack of weather, reminders and device control.
+  This is a limited behavioral sample, not a guarantee against hallucination.
+- Added missing/corrupted model and Unix symlink rejection regressions. 21 voice
+  tests and voice Clippy passed; full workspace gates passed 37 Rust tests with the
+  existing physical credential-store test ignored. All 50 TS tests/static/build
+  gates and 19 isolated PostgreSQL tests passed.
+- Six revised body captures match independent repeats exactly; product captures
+  include the new setup disclosure and consistent select styling. No owner data
+  appears in committed screenshots. Native private-page observations are not
+  copied into repository assets.
+- Local model stop/restart recovered successfully; component resource measurements
+  and cold-start limitations are in PHASE4_PERFORMANCE. No paid API was used.
+- Hosted Validate 38007216546 passed all Linux/macOS/Windows jobs on ada37bd. The
+  earlier 38007137833 was superseded/cancelled and is not an all-platform pass.
+
+The initial generic bundle command created/signed the Mac app but failed at DMG
+packaging. Explicit app-only bundling and entitlement/signature verification
+passed; no distributable DMG success is claimed. The latest app is being rebuilt
+for installation after these refinements. Startup was temporarily disabled and
+the old runtime/dashboard stopped to replace the whole bundle safely; restore
+startup after installation. Physical voice/sleep and final native review remain
+open; PR #4 remains draft, with no Prompt #5 work.
+
+## Interrupted task resumed — 2026-10-11
+
+Re-read the final continuation/conditional merge instructions and inspected the
+working tree, logs, acceptance ledger and prior commits. The interrupted unit was
+product/setup/status/persona refinements plus verified full-bundle installation.
+All eleven reviewed visual comparisons passed. The latest signed app-only bundle
+was installed as a whole after confirming the old processes had stopped; its
+previous bundle was retained outside Git. Signature verification passed, the
+native owner dashboard resumed LIVE, and start-at-login was restored to ENABLED.
+The new helper is STARTING with capture off while awaiting owner Keychain approval.
+This is a real owner-only approval; no password is requested in chat.
+
+Next: verify ONLINE after that approval; finish the real Mac voice/lifecycle matrix,
+remaining product/color-state/scale review and latest Windows repeated cold-probe
+validation. The owner now authorizes PR #4 merge only after every required gate,
+including physical Mac voice, passes. Do not merge on automated checks alone.

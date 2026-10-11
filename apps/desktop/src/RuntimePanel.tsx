@@ -34,7 +34,9 @@ export function RuntimePanel({
   diagnostics?: boolean;
 }) {
   const [local, setLocal] = useState<Local | null>(null),
-    [startup, setStartup] = useState('NOT_CONFIGURED'),
+    [startup, setStartup] = useState('CHECKING'),
+    [checking, setChecking] = useState(isTauri()),
+    [readFailed, setReadFailed] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [time, setTime] = useState(Date.now());
@@ -54,13 +56,15 @@ export function RuntimePanel({
           setLocal(state ? localSchema.parse(state) : null);
           setStartup(start);
           setTime(Date.now());
+          setReadFailed(false);
         }
       } catch {
         if (!closed) {
           setLocal(null);
-          setError('Local runtime status could not be read.');
+          setReadFailed(true);
         }
       } finally {
+        if (!closed) setChecking(false);
         pending = false;
       }
     };
@@ -103,7 +107,15 @@ export function RuntimePanel({
       <div>
         <div className="eyebrow">BACKGROUND RUNTIME</div>
         <h2>
-          {local ? local.state.replaceAll('_', ' ') : 'Runtime not running'}
+          {!isTauri()
+            ? 'Native app required'
+            : checking
+              ? 'Checking runtime…'
+              : readFailed
+                ? 'Runtime status unavailable'
+                : local
+                  ? local.state.replaceAll('_', ' ')
+                  : 'Runtime not running'}
         </h2>
         <p>
           Your runtime stays active when this dashboard closes. Voice runs here
@@ -125,28 +137,30 @@ export function RuntimePanel({
             <div className="actions">
               <button
                 className="secondary"
-                disabled={busy || !!local}
+                disabled={checking || readFailed || busy || !!local}
                 onClick={() => void action('runtime_start')}
               >
                 Start runtime
               </button>
               <button
                 className="secondary"
-                disabled={busy || !local || !authenticated}
+                disabled={
+                  checking || readFailed || busy || !local || !authenticated
+                }
                 onClick={() => void action('runtime_connect', { base })}
               >
                 Connect runtime to Core
               </button>
               <button
                 className="secondary"
-                disabled={busy || !local}
+                disabled={checking || readFailed || busy || !local}
                 onClick={() => void action('runtime_reconnect')}
               >
                 Reconnect runtime
               </button>
               <button
                 className="secondary"
-                disabled={busy || !local}
+                disabled={checking || readFailed || busy || !local}
                 onClick={() => void action('runtime_stop')}
               >
                 Stop runtime
@@ -156,7 +170,11 @@ export function RuntimePanel({
               <button
                 className="secondary"
                 disabled={
-                  busy || startup === 'ENABLED' || startup === 'UNAVAILABLE'
+                  checking ||
+                  readFailed ||
+                  busy ||
+                  startup === 'ENABLED' ||
+                  startup === 'UNAVAILABLE'
                 }
                 onClick={() => void action('runtime_startup', { enable: true })}
               >
@@ -165,7 +183,10 @@ export function RuntimePanel({
               <button
                 className="secondary"
                 disabled={
-                  busy || !['ENABLED', 'APPROVAL_REQUIRED'].includes(startup)
+                  checking ||
+                  readFailed ||
+                  busy ||
+                  !['ENABLED', 'APPROVAL_REQUIRED'].includes(startup)
                 }
                 onClick={() =>
                   void action('runtime_startup', { enable: false })
@@ -194,7 +215,13 @@ export function RuntimePanel({
           </>
         )}
         {diagnostics && local && <RuntimeDiagnostics local={local} />}
-        <Notice message={error} />
+        <Notice
+          message={
+            readFailed
+              ? 'Local runtime status could not be read. Retrying automatically.'
+              : error
+          }
+        />
         {snapshot?.devices.map((device) => {
           const presence = snapshot.runtimePresence?.find(
             (r) => r.deviceId === device.id,

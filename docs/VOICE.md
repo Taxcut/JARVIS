@@ -126,3 +126,12 @@ the actual recognized text was sent to Qwen, which answered the arithmetic.
 - [Pinned Qwen variant](https://ollama.com/library/qwen3:4b-instruct-2507-q4_K_M)
 
 See THIRD_PARTY_VOICE for model/library licenses and distribution limitations.
+
+### Validation and resource evidence
+
+See [PHASE4_PERFORMANCE](PHASE4_PERFORMANCE.md) for measured component process peaks,
+local service restart recovery and cold-start limitations. Settings includes an
+expandable setup/test guide; it distinguishes verified local model installation
+from reconnecting, lazy Qwen loading and physical wake/conversation tests. The
+local persona cannot truthfully promise reminders, sensors, live weather or
+computer control. No generated claim grants those capabilities.

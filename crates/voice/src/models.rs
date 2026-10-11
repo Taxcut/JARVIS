@@ -176,3 +176,44 @@ impl VoiceEngine for Kokoro {
         Ok(audio.samples().to_vec())
     }
 }
+
+#[cfg(test)]
+mod integrity_tests {
+    use super::*;
+    struct Fixture(PathBuf);
+    impl Fixture {
+        fn new() -> Self {
+            let root =
+                std::env::temp_dir().join(format!("jarvis-model-check-{}", uuid::Uuid::new_v4()));
+            std::fs::create_dir(&root).unwrap();
+            Self(root)
+        }
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    fn manifest() -> String {
+        serde_json::json!([{"path":"model.bin", "sha256":hex::encode(Sha256::digest(b"fixed synthetic model"))}]).to_string()
+    }
+    #[test]
+    fn missing_and_corrupted_assets_fail_before_model_loading() {
+        let f = Fixture::new();
+        assert!(verify(&f.0).is_err());
+        assert!(verify_stt(&f.0).is_err());
+        assert!(verify_manifest(&f.0, &manifest()).is_err());
+        std::fs::write(f.0.join("model.bin"), b"fixed synthetic model").unwrap();
+        assert!(verify_manifest(&f.0, &manifest()).is_ok());
+        std::fs::write(f.0.join("model.bin"), b"corrupt").unwrap();
+        assert!(verify_manifest(&f.0, &manifest()).is_err());
+    }
+    #[cfg(unix)]
+    #[test]
+    fn linked_asset_is_rejected_even_when_content_matches() {
+        let f = Fixture::new();
+        std::fs::write(f.0.join("target.bin"), b"fixed synthetic model").unwrap();
+        std::os::unix::fs::symlink(f.0.join("target.bin"), f.0.join("model.bin")).unwrap();
+        assert!(verify_manifest(&f.0, &manifest()).is_err());
+    }
+}

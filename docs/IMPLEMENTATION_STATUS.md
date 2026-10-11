@@ -4,7 +4,22 @@ Prompt #4 is authorized and underway. See [PHASE4_WORKLOG](PHASE4_WORKLOG.md)
 for current implementation and verification boundaries. Historical Phase 1–3
 evidence below remains valid; it does not imply Phase 4 acceptance.
 
-## Latest verification — 2026-10-09
+## Latest verification — 2026-10-10
+
+Additional product fixes add local setup guidance, consistent native select
+controls and honest loading/unavailable runtime status. Model-integrity regressions
+and a fixed resource probe were added. Current validation: 50 TypeScript tests,
+19 isolated PostgreSQL tests, 37 Rust tests (one physical credential-store test
+ignored), static gates and signed Mac app-only bundle verification. Native model
+service restart recovered through a synthetic local end-to-end probe. See
+[PHASE4_PERFORMANCE](PHASE4_PERFORMANCE.md) for measured memory/latency and limits.
+Hosted Validate 38007216546 passed all platforms on ada37bd; newer refinements need
+their own CI. Native voice telemetry advanced to three wakes and nonzero latency
+readings, followed by DISABLED/capture off; exact physical acceptance is still
+pending. The verified whole app is now installed and startup restored; the new
+helper awaits owner Keychain approval with capture off. Windows validation continues.
+
+### Prior visual checkpoint — 2026-10-09
 
 Phase 4 remains incomplete; PR #4 is draft and unmerged. The visual follow-up
 adds five reviewed isolated product baselines (settings, compact settings,

@@ -28,3 +28,24 @@ model integrity and model-state UI. Implementation exists; physical acceptance,
 Windows inference and final performance/security/product verification are open.
 The former API-credit result is historical, not a blocker. Owner-only checks may
 wait while the owner sleeps; continue independent work.
+
+## Final continuation requirements — 2026-10-11
+
+The owner conditionally authorizes merging PR #4 after every required gate passes.
+The draft must remain unmerged while any required acceptance is unresolved.
+The interrupted product/setup/status refinements were validated and installed;
+startup is restored and the changed helper awaits protected Keychain approval.
+
+| Gate               | Current state                                                                                            | Remaining evidence                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Engineering        | Latest local TS/static/build, 19 PostgreSQL, 37 Rust, signed Mac app and model integrity checks passed   | Final source checkpoint CI and current Windows build/probes                           |
+| Product            | Setup guidance, honest runtime loading, native controls and capability copy improved                     | Final built-app panels, keyboard/text scaling and copy review                         |
+| Visual             | Six body + five product comparisons passed                                                               | Coordinated state/lockdown/startup coverage and physical audio-state review           |
+| Security           | Local-boundary review and candidate/history scan passed                                                  | Final source review plus real privacy/lifecycle acceptance                            |
+| Physical Mac voice | Owner previously reported one full spoken answer; telemetry later recorded wakes/response then voice off | Corroborated wake/noise/turn/pause/barge-in/stop, sleep/wake and voice-quality matrix |
+| Final CI           | ada37bd passed all platforms                                                                             | Fresh final implementation run                                                        |
+| Merge readiness    | Not ready                                                                                                | All preceding gates, clean pushed tree and final PR verification                      |
+
+Windows physical audio/Hello/display checks may be explicitly deferred if owner
+interaction is impractical, as authorized. Required Mac physical checks cannot be
+silently deferred. No Prompt #5 functionality or work is authorized.
