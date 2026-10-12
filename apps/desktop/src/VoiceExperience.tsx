@@ -60,17 +60,21 @@ export function VoiceExperience({
   voice,
   onSetup,
   connected,
+  securityLocked = false,
 }: {
   voice: Voice;
   onSetup: () => void;
   connected: boolean;
+  securityLocked?: boolean;
 }) {
   const { preferences, update, reduced } = useVisualPreferences();
   const quality = preferences.quality;
   const status = voice.status,
-    state = bodyState(status?.phase, connected),
+    state = bodyState(securityLocked ? 'LOCKDOWN' : status?.phase, connected),
     settings = status?.settings;
-  const copy = voiceHeadline(status, connected);
+  const copy = securityLocked
+    ? 'Voice paused by lockdown.'
+    : voiceHeadline(status, connected);
   return (
     <section className="voice-experience" aria-labelledby="presence-title">
       <div className="presence-topline">

@@ -452,3 +452,30 @@ failure is preserved. Three cold repeats on the new checkpoint remain required.
 No merge readiness is claimed. Next: finish the physical audio investigation,
 latest Windows repeated cold validation, final native product/lifecycle matrix,
 final CI and remaining acceptance-ledger gates. Prompt #5 is not started.
+
+### Verified follow-up — October 12
+
+Docker reports about 2 GiB total memory after the resource change. Its original
+PostgreSQL volume is healthy, Core health succeeds, and runtime returned ONLINE
+following an explicit Reconnect. This does not prove uninterrupted active-voice
+recovery. The owner physical retest remains pending; a three-minute observation
+window recorded no new wakes and cannot be counted as that spoken test.
+
+Checkpoint 1d92bcc passed hosted Validate 38203593660 on Linux, macOS and Windows.
+On the real Windows PC, the full debug workspace check was blocked by Application
+Control error 4551 for a newly compiled desktop build helper. No policy was
+weakened. Separate voice/runtime/identity Clippy and 37 tests passed, and the
+release desktop/helper and synthetic probe compiled successfully. Three cold
+repeats could not begin: port 11434 is occupied by an Ollama process not inspectable
+from the restricted SSH account; its model catalog is empty, while JARVIS's pinned
+model manifest exists in the development account's private directory. The exact
+owner/process configuration has not been established. Asked the owner to quit
+that existing Windows Ollama app if the PC is available; do not kill an unidentified
+process or weaken the Windows account boundary.
+
+The remaining small UI correction uses the owner's security projection to retain
+LOCKDOWN presentation even with voice disabled. Native identity loading also now
+shows system-approval progress rather than incorrectly telling the native user
+to open the native app. Targeted tests and the full 51-test TS/static/build gate
+passed. The current 19 PostgreSQL integration checks passed after the database
+restart. These UI changes require a new checkpoint/build/CI before final closure.

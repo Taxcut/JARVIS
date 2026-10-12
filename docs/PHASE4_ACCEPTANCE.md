@@ -62,3 +62,12 @@ silently deferred. No Prompt #5 functionality or work is authorized.
 - a0ee30d hosted CI and Windows native checks passed; final source requires new CI.
 - New local gates passed 50 TS and 39 Rust tests. Windows cold-start repeats,
   sleep/wake, voice quality and all unclosed required gates still block merge.
+
+Follow-up: 1d92bcc hosted Linux/macOS/Windows passed (Validate 38203593660).
+Real Windows release builds and 37 voice/runtime/identity tests passed. The local
+debug desktop helper remains blocked by Application Control 4551; cold model
+repeats are separately blocked by an inaccessible existing loopback Ollama listener
+with an empty catalog. No Windows security exception or alternative architecture
+was introduced. Owner actions for the Mac spoken retest and Windows listener are
+pending. The UI lockdown/secure-storage-loading correction passes 51 TS tests;
+19 PostgreSQL integration tests passed after restart.

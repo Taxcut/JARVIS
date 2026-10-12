@@ -143,9 +143,13 @@ export function App() {
         : hour < 18
           ? 'Good afternoon'
           : 'Good evening';
+  const securityLocked = identity.snapshot?.owner.securityState === 'LOCKDOWN';
   return (
     <div
-      data-presence={bodyState(voice.status?.phase, identity.sync === 'LIVE')}
+      data-presence={bodyState(
+        securityLocked ? 'LOCKDOWN' : voice.status?.phase,
+        identity.sync === 'LIVE',
+      )}
       className={`shell ${!setup && (page === 'Core' || page === 'Assistant') ? 'presence-page' : ''}`}
     >
       <a className="skip-link" href="#main-content">
@@ -388,6 +392,7 @@ export function App() {
           ) : page === 'Core' || page === 'Assistant' ? (
             <VoiceExperience
               voice={voice}
+              securityLocked={securityLocked}
               connected={identity.sync === 'LIVE'}
               onSetup={() =>
                 identity.sync === 'LIVE' ? setPage('Settings') : setSetup(true)

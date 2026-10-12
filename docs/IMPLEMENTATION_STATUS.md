@@ -12,8 +12,11 @@ yet passed physical acceptance. The 8 GiB Mac's Docker budget was reduced from
 4 to 2 GiB to investigate observed memory pressure. See PHASE4_WORKLOG for failed
 trials and the exact next validation. Distinct lockdown/reconnection visuals,
 coordinated state accents and input reactivity now have reviewed deterministic
-coverage. Local TS/static/build and 39 Rust tests pass. a0ee30d passed hosted
-Linux/macOS/Windows; newer source needs fresh CI. PR #4 remains draft and unmerged.
+coverage. Local TS/static/build and 39 Rust tests pass. 1d92bcc passed hosted
+Linux/macOS/Windows (Validate 38203593660); subsequent small UI corrections need
+fresh CI. The real Windows release build and 37 native tests passed, but local
+debug-helper policy and an inaccessible empty-model Ollama listener are recorded
+limitations. The Mac spoken retest after the memory change remains owner-only. PR #4 remains draft and unmerged.
 
 ## Latest verification — 2026-10-10
 

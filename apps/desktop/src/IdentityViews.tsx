@@ -1,4 +1,5 @@
 import { ConfirmAction } from './ConfirmAction.js';
+import { isTauri } from './identity-client.js';
 import { Notice } from './Notice.js';
 import { useState } from 'react';
 import type { IdentityController } from './use-identity.js';
@@ -72,7 +73,13 @@ export function IdentityEntry({
           {identity.native.fingerprint.slice(0, 16)}
         </p>
       ) : (
-        <p>Open the native JARVIS desktop to use secure device identity.</p>
+        <p role="status">
+          {isTauri()
+            ? identity.error
+              ? 'Identity is unavailable until secure storage can be opened.'
+              : 'Opening your secure identity… Complete any system approval to continue.'
+            : 'Open the native JARVIS desktop to use secure device identity.'}
+        </p>
       )}
       <div className="actions">
         <button

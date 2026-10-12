@@ -176,3 +176,21 @@ never changes Defender, Firewall, Smart App Control or RedirectionGuard. Existin
 9a242d3 native build/28-test evidence predates this change. Updated Windows local
 inference and native build validation remain pending; physical microphone and
 owner enrollment are separate. Remote availability has resumed.
+
+### October 12 Phase 4 checkpoint
+
+The standard-user checkout fast-forwarded to 1d92bcc. Voice/runtime/identity Clippy
+and 37 tests passed; release desktop, helper and local probe builds passed with
+the existing LNK4098 warning. The full debug workspace command failed before
+running the desktop build helper with Application Control error 4551. This is not
+a full local workspace pass; hosted Validate 38203593660 separately passed Windows.
+The pnpm junction limitation remains, so the native build used the checkpoint's
+Mac-built frontend output copied into ignored dist, without changing lockfiles.
+
+Repeated cold model checks were blocked before inference by an existing port-11434
+listener with an empty catalog. Its executable path was not accessible from the
+restricted account. The pinned JARVIS model manifest still exists in that account's
+private model directory. Do not stop an unidentified listener or broaden account
+privileges; the owner may quit the existing Ollama app, after which the normal
+pinned JARVIS launcher can be validated. Earlier failed cold/STT observations remain
+in PHASE4_WORKLOG; they have not been replaced by a claimed reliable cold-start pass.

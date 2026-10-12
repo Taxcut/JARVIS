@@ -89,3 +89,25 @@ for (const state of [
       ),
     ).toContain(`JARVIS presence: ${state.toLowerCase()}`);
   });
+
+it('keeps lockdown visible even when voice is off', () => {
+  const voice: Voice = {
+    status: fixture('DISABLED'),
+    runtime: 'ONLINE',
+    native: true,
+    error: '',
+    busy: false,
+    configure: async () => {},
+    control: async () => {},
+  };
+  const html = renderToStaticMarkup(
+    createElement(VoiceExperience, {
+      voice,
+      connected: true,
+      securityLocked: true,
+      onSetup: () => {},
+    }),
+  );
+  expect(html).toContain('JARVIS presence: lockdown');
+  expect(html).toContain('Voice paused by lockdown.');
+});
