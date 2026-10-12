@@ -153,6 +153,45 @@ fn mark_failure(e: cpal::Error, f: &AtomicU8) {
     };
     f.store(code, Ordering::Release);
 }
+// Bound backlog by audio duration, not by a backend's callback size. CoreAudio
+// may deliver very small callbacks; 32 such packets could cover less than 100 ms.
+// Both paths now queue at most 640 ms in 10 ms mono blocks (plus one partial).
+const AUDIO_QUEUE_BLOCKS: usize = 64;
+struct AudioPackets {
+    pending: Vec<f32>,
+    block: usize,
+}
+impl AudioPackets {
+    fn new(rate: u32) -> Self {
+        let block = (rate / 100).max(1) as usize;
+        Self {
+            pending: Vec::with_capacity(block),
+            block,
+        }
+    }
+    fn push(&mut self, samples: &[f32], tx: &SyncSender<Vec<f32>>) -> Result<(), u8> {
+        if samples.len() > 8192 {
+            return Err(5);
+        }
+        if samples.iter().any(|v| !v.is_finite()) {
+            return Err(4);
+        }
+        for part in samples.chunks(self.block) {
+            let mut rest = part;
+            while !rest.is_empty() {
+                let n = rest.len().min(self.block - self.pending.len());
+                self.pending.extend_from_slice(&rest[..n]);
+                rest = &rest[n..];
+                if self.pending.len() == self.block {
+                    let packet =
+                        std::mem::replace(&mut self.pending, Vec::with_capacity(self.block));
+                    tx.try_send(packet).map_err(|_| 3)?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
 fn input_stream<T: Sample + SizedSample>(
     device: &cpal::Device,
     config: cpal::StreamConfig,
@@ -165,6 +204,7 @@ where
 {
     let channels = config.channels as usize;
     let fail = failure.clone();
+    let mut packets = AudioPackets::new(config.sample_rate);
     device.build_input_stream(
         config,
         move |data: &[T], _| {
@@ -177,17 +217,12 @@ where
             }
             let mono: Vec<f32> = data
                 .chunks_exact(channels)
-                .map(|f| {
-                    f.iter()
-                        .map(|x| x.to_sample::<f32>().clamp(-1.0, 1.0))
-                        .sum::<f32>()
-                        / channels as f32
-                })
+                .map(|f| f.iter().map(|x| x.to_sample::<f32>()).sum::<f32>() / channels as f32)
                 .collect();
             if mono.iter().any(|v| !v.is_finite()) {
                 fail.store(4, Ordering::Release);
-            } else if tx.try_send(mono).is_err() {
-                fail.store(3, Ordering::Release);
+            } else if let Err(code) = packets.push(&mono, &tx) {
+                fail.store(code, Ordering::Release);
             }
         },
         move |e| mark_failure(e, &failure),
@@ -210,6 +245,7 @@ fn output_stream<T: Sample + SizedSample + FromSample<f32>>(
 ) -> Result<cpal::Stream, cpal::Error> {
     let channels = config.channels as usize;
     let rate = config.sample_rate as f32;
+    let mut packets = AudioPackets::new(config.sample_rate);
     let mut low = 0.0f32;
     let mut mid = 0.0f32;
     let fail = s.failure.clone();
@@ -254,7 +290,10 @@ fn output_stream<T: Sample + SizedSample + FromSample<f32>>(
             for (i, part) in energy.iter().enumerate() {
                 s.bands[i].store((part / n).sqrt().to_bits(), Ordering::Relaxed);
             }
-            let _ = s.render.try_send(reference);
+            if let Err(code) = packets.push(&reference, &s.render) {
+                // Lost echo reference can cause false barge-in; recover explicitly.
+                s.failure.store(code, Ordering::Release);
+            }
         },
         move |e| mark_failure(e, &fail),
         Some(Duration::from_secs(2)),
@@ -277,8 +316,8 @@ impl Audio {
             .map_err(|_| "Speaker configuration is unavailable")?;
         let ir = ic.sample_rate();
         let or = oc.sample_rate();
-        let (tx, input) = mpsc::sync_channel(32);
-        let (render_tx, render) = mpsc::sync_channel(32);
+        let (tx, input) = mpsc::sync_channel(AUDIO_QUEUE_BLOCKS);
+        let (render_tx, render) = mpsc::sync_channel(AUDIO_QUEUE_BLOCKS);
         let failure = Arc::new(AtomicU8::new(0));
         let output_level = Arc::new(AtomicU32::new(0));
         let output_bands = Arc::new([AtomicU32::new(0), AtomicU32::new(0), AtomicU32::new(0)]);
@@ -390,7 +429,7 @@ impl Audio {
         id(true).as_deref() != Some(&self.input_id) || id(false).as_deref() != Some(&self.output_id)
     }
     pub fn read(&mut self) -> Result<Vec<[f32; 160]>, &'static str> {
-        for _ in 0..32 {
+        for _ in 0..AUDIO_QUEUE_BLOCKS {
             match self.render.try_recv() {
                 Ok(data) => self
                     .render_resampler
@@ -405,7 +444,7 @@ impl Audio {
                 .process_render_f32(&[&data], &mut [&mut out])
                 .map_err(|_| "Echo processing failed")?;
         }
-        for _ in 0..32 {
+        for _ in 0..AUDIO_QUEUE_BLOCKS {
             match self.input.try_recv() {
                 Ok(data) => {
                     self.last_capture = Instant::now();
@@ -480,6 +519,32 @@ pub fn resample_playback(input: &[f32], from: u32, to: u32) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn callback_partition_does_not_shorten_the_audio_backlog_budget() {
+        for callback in [32, 128, 480, 2048] {
+            let (tx, rx) = mpsc::sync_channel(AUDIO_QUEUE_BLOCKS);
+            let mut packets = AudioPackets::new(48000);
+            let input: Vec<f32> = (0..480 * AUDIO_QUEUE_BLOCKS).map(|i| i as f32).collect();
+            for chunk in input.chunks(callback) {
+                packets.push(chunk, &tx).unwrap();
+            }
+            assert!(packets.pending.is_empty());
+            assert_eq!(packets.push(&[0.0; 480], &tx), Err(3));
+            let output: Vec<f32> = rx.try_iter().flatten().collect();
+            assert_eq!(output, input);
+        }
+    }
+    #[test]
+    fn invalid_or_oversized_packets_never_reach_capture_processing() {
+        let (tx, rx) = mpsc::sync_channel(AUDIO_QUEUE_BLOCKS);
+        let mut packets = AudioPackets::new(16000);
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert_eq!(packets.push(&[bad], &tx), Err(4));
+        }
+        assert_eq!(packets.push(&[0.0; 8193], &tx), Err(5));
+        assert!(packets.pending.is_empty());
+        assert!(rx.try_recv().is_err());
+    }
     #[test]
     fn advisory_audio_events_do_not_destroy_a_live_stream_or_clear_failure() {
         for initial in [0, 1, 2] {

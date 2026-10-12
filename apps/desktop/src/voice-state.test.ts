@@ -7,7 +7,11 @@ it('shows actual audio and security states rather than an always-online presence
   expect(bodyState('SPEAKING', true)).toBe('SPEAKING');
   expect(bodyState('LISTENING', true)).toBe('LISTENING');
   expect(bodyState('THINKING', true)).toBe('THINKING');
-  expect(bodyState('LOCKDOWN', true)).toBe('ALERT');
+  expect(bodyState('LOCKDOWN', true)).toBe('LOCKDOWN');
+  expect(bodyState('LOCKDOWN', false)).toBe('LOCKDOWN');
+  expect(bodyState('STARTING', true)).toBe('RECONNECTING');
+  expect(bodyState('UNAVAILABLE', true)).toBe('OFFLINE');
+  expect(bodyState('AUTH_REQUIRED', true)).toBe('OFFLINE');
   expect(bodyState('MUTED', true)).toBe('IDLE');
 });
 it('low power reduces particles, trails, resolution and frame rate', () => {

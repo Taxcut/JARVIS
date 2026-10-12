@@ -42,11 +42,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     println!("Synthetic fixture transcript: {final_text:?}");
+    // Accept the spoken numeral's homophones, but send the unmodified STT
+    // result to the model. A correct answer is still required below.
+    let spoken = final_text.to_lowercase().replace("too", "two");
     assert!(
-        final_text
-            .to_lowercase()
-            .replace("too", "two")
-            .contains("two plus two"),
+        spoken.contains("two plus two") || spoken.contains("to plus two"),
         "Synthetic STT arithmetic fixture failed"
     );
     println!(

@@ -396,3 +396,59 @@ Next: verify ONLINE after that approval; finish the real Mac voice/lifecycle mat
 remaining product/color-state/scale review and latest Windows repeated cold-probe
 validation. The owner now authorizes PR #4 merge only after every required gate,
 including physical Mac voice, passes. Do not merge on automated checks alone.
+
+## Physical failure investigation and state polish — 2026-10-11/12
+
+The owner approved Keychain and microphone access on the installed a0ee30d build.
+A real immediate Hey Jarvis arithmetic/follow-up test was reported successful;
+safe telemetry corroborated one wake, 345 ms first token, 3,621 ms first generated
+audio, and DISABLED with capture/playback zero after spoken stop. This is one
+observed trial, not a general latency guarantee or a completed physical matrix.
+
+The subsequent solar-system/barge-in trial failed. A quiet repeat captured the
+specific failure: microphone processing fell behind, the turn was cancelled, and
+audio reconnected. The response text existed but no new playback was recorded.
+Both failures are retained; barge-in is not passed. Callback queues counted
+backend packets, so very small callbacks gave less than 100 ms of backlog.
+Input and echo-reference packets now normalize to 10 ms, with 64 blocks (640 ms)
+maximum per queue, finite/oversize rejection and explicit overflow recovery.
+Two regressions verify callback partition independence and invalid input rejection.
+
+The signed replacement was installed as a whole and startup restored. Protected
+approvals and the existing trusted Core connection were completed. Its quiet
+repeat produced real playback after 20,887 ms, then a short detected owner partial
+interrupted playback and another overflow recovery occurred. Owner replied done;
+that does not establish a complete clear answer. Stop left DISABLED and zero
+capture/output. Physical voice acceptance remains open; the buffer change alone
+has not resolved the problem.
+
+The Mac has 8 GiB memory. Docker was allocated 4 GiB for its only running container,
+JARVIS PostgreSQL (about 31 MiB container use), while Qwen used about 2.7 GiB RSS.
+Substantial compression/swap pressure was observed. On October 12 the Docker
+budget was reduced to 2 GiB through its normal settings, preserving its volume and
+security configuration. PostgreSQL was restarted and became healthy. Core/runtime
+recovery and physical retest are the immediate next checks; memory pressure is a
+contributing hypothesis, not a proven sole cause.
+
+Product changes add distinct LOCKDOWN and RECONNECTING states, shared restrained
+workspace accents, microphone-driven LISTENING and cyan/amber SPEAKING. Reduced
+motion disables these transitions. Normal settings now describe the local voice
+without provider/model implementation names. Eight body and five product captures
+were reviewed and independently repeated with exact pixel matches. Full-page
+capture avoids docked-browser clipping; waiting for fonts avoids layout drift.
+These are isolated fixtures, not physical-state acceptance.
+
+Current local gates: 50 TS tests/static/build, 39 Rust tests (23 voice, 10 runtime,
+6 identity; one existing physical-store test ignored), fmt/check/Clippy, signed
+Mac app and microphone entitlement verification passed. Hosted Validate
+38118250010 passed Linux/macOS/Windows at a0ee30d, before these newer changes.
+Windows a0ee30d native fmt/check/Clippy, 35 tests and release desktop/helper build
+passed. Its cold service-start probe recognized the fixed arithmetic phrase as
+“to plus two” and failed the previous exact-word assertion before model inference.
+The synthetic probe now accepts that numeral homophone while sending the actual,
+unmodified transcript to Qwen and still requiring the correct answer. The old
+failure is preserved. Three cold repeats on the new checkpoint remain required.
+
+No merge readiness is claimed. Next: finish the physical audio investigation,
+latest Windows repeated cold validation, final native product/lifecycle matrix,
+final CI and remaining acceptance-ledger gates. Prompt #5 is not started.

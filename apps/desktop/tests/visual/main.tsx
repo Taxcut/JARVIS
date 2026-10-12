@@ -3,7 +3,11 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { IntelligenceBody, type BodyState } from '../../src/IntelligenceBody';
 import '../../src/style.css';
-import { VoiceExperience, VoiceSettings } from '../../src/VoiceExperience';
+import {
+  bodyState,
+  VoiceExperience,
+  VoiceSettings,
+} from '../../src/VoiceExperience';
 import { RuntimeDiagnostics } from '../../src/RuntimePanel';
 import { ConfirmAction } from '../../src/ConfirmAction';
 import type { VoiceStatus, VoicePhase } from '@jarvis/protocol';
@@ -15,6 +19,7 @@ localStorage.setItem(
   'jarvis.visualPreferences',
   JSON.stringify({ quality: 'HIGH', startup: 'off', reducedMotion: true }),
 );
+document.documentElement.dataset.reducedMotion = 'true';
 function ProductFixture() {
   const [phase, setPhase] = useState<VoicePhase>(
     (query.get('phase') ?? 'STARTING') as VoicePhase,
@@ -72,7 +77,10 @@ function ProductFixture() {
     control: async () => {},
   };
   return (
-    <main className="visual-fixture product-fixture">
+    <main
+      className="visual-fixture product-fixture"
+      data-presence={bodyState(phase, true)}
+    >
       <header>
         <h1>Isolated product fixture</h1>
         <p>No identity, audio devices or connected services.</p>
@@ -154,11 +162,13 @@ const states: BodyState[] = [
   'SPEAKING',
   'ALERT',
   'OFFLINE',
+  'LOCKDOWN',
+  'RECONNECTING',
 ];
 function VisualFixture() {
   const [state, setState] = useState<BodyState>('IDLE');
   return (
-    <main className="visual-fixture">
+    <main className="visual-fixture" data-presence={state}>
       <header>
         <h1>Isolated visual fixture</h1>
         <label>
@@ -179,7 +189,7 @@ function VisualFixture() {
           quality="HIGH"
           reduced={true}
           seed={41}
-          level={state === 'SPEAKING' ? 0.18 : 0}
+          level={state === 'SPEAKING' ? 0.18 : state === 'LISTENING' ? 0.06 : 0}
           bands={state === 'SPEAKING' ? [0.07, 0.15, 0.04] : [0, 0, 0]}
         />
         <div className="body-caption">

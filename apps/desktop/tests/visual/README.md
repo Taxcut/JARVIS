@@ -10,7 +10,9 @@ This entry has no native invocation or connected services. Its preference storag
 belongs to the isolated test origin; do not serve it from the production origin.
 Use the config above so bundled fonts and brand assets resolve. Capture with the
 supported browser tool, after fonts and the rendered state are visible. Keep the
-same browser, scale and viewport for both captures. Review actual pixels before
+same browser, scale and viewport for both captures. Use full-page captures so
+the docked browser panel cannot crop the right edge. Compact settings and model
+loading extend below the viewport; retain the complete scrollable content. Review actual pixels before
 accepting a baseline; do not increase tolerances to conceal missing content.
 
 | File                         | Query at localhost:1421    | Viewport  |
@@ -22,7 +24,7 @@ accepting a baseline; do not increase tolerances to conceal missing content.
 | product-confirmation.jpg     | ?view=confirmation         | 1024×768  |
 
 For confirmation, open Revoke session; Cancel starts focused. No real session is
-changed. For model loading, wait for data-rendered-state=THINKING; also capture
+changed. For model loading, wait for data-rendered-state=RECONNECTING; also capture
 again after resizing away and back to catch cleared reduced-motion frames.
 Product fixtures force High quality and reduced motion for deterministic pixels.
 
@@ -30,7 +32,7 @@ Product fixtures force High quality and reduced motion for deterministic pixels.
 pnpm visual:compare /absolute/capture/directory --product
 ```
 
-The existing six body captures use the default entry, High quality, reduced motion,
+The eight body captures use the default entry, High quality, reduced motion,
 seed 41 and 1024×768. Select each body state and save fixture-STATE.jpg (lowercase).
 Compare without --product. These are Mac browser regressions, not proof of native
 Windows rendering, physical voice behavior or production operational state.

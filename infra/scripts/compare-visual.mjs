@@ -17,7 +17,16 @@ for (const state of product
       'compact-settings',
       'confirmation',
     ]
-  : ['idle', 'listening', 'thinking', 'speaking', 'alert', 'offline']) {
+  : [
+      'idle',
+      'listening',
+      'thinking',
+      'speaking',
+      'alert',
+      'offline',
+      'lockdown',
+      'reconnecting',
+    ]) {
   const file = `${product ? 'product' : 'fixture'}-${state}.jpg`;
   const decode = async (path) =>
     jpeg.decode(await readFile(path), {

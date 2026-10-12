@@ -4,6 +4,17 @@ Prompt #4 is authorized and underway. See [PHASE4_WORKLOG](PHASE4_WORKLOG.md)
 for current implementation and verification boundaries. Historical Phase 1–3
 evidence below remains valid; it does not imply Phase 4 acceptance.
 
+## Latest checkpoint — 2026-10-12
+
+Prompt #4 is still in progress. Real spoken stop is corroborated, but longer
+answers exposed an audio backlog/recovery defect; a first buffer repair has not
+yet passed physical acceptance. The 8 GiB Mac's Docker budget was reduced from
+4 to 2 GiB to investigate observed memory pressure. See PHASE4_WORKLOG for failed
+trials and the exact next validation. Distinct lockdown/reconnection visuals,
+coordinated state accents and input reactivity now have reviewed deterministic
+coverage. Local TS/static/build and 39 Rust tests pass. a0ee30d passed hosted
+Linux/macOS/Windows; newer source needs fresh CI. PR #4 remains draft and unmerged.
+
 ## Latest verification — 2026-10-10
 
 Additional product fixes add local setup guidance, consistent native select

@@ -49,3 +49,16 @@ startup is restored and the changed helper awaits protected Keychain approval.
 Windows physical audio/Hello/display checks may be explicitly deferred if owner
 interaction is impractical, as authorized. Required Mac physical checks cannot be
 silently deferred. No Prompt #5 functionality or work is authorized.
+
+## October 12 checkpoint qualification
+
+- Immediate wake/arithmetic/follow-up/spoken stop has one corroborated Mac trial.
+- Solar-system playback/barge-in failed twice; the first buffer repair also showed
+  an overflow and possible false interruption. Do not mark physical voice passed.
+- Docker memory allocation was reduced from 4 to 2 GiB on the 8 GiB Mac; retest is
+  pending. Keep the earlier failed observations alongside any eventual pass.
+- LOCKDOWN/reconnection, coordinated accents and input reactivity are implemented;
+  eight body/five product isolated images repeat exactly. Native review is pending.
+- a0ee30d hosted CI and Windows native checks passed; final source requires new CI.
+- New local gates passed 50 TS and 39 Rust tests. Windows cold-start repeats,
+  sleep/wake, voice quality and all unclosed required gates still block merge.

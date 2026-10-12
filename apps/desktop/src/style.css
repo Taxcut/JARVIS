@@ -1777,3 +1777,84 @@ nav button {
 .voice-setup-guide li + li {
   margin-top: 10px;
 }
+
+/* One state palette follows real voice/security state across the workspace. */
+[data-presence] {
+  --presence-accent: #ffc775;
+  --presence-wash: #ffc7750a;
+  --presence-border: #ffc77542;
+  transition:
+    background-color 400ms ease,
+    border-color 400ms ease;
+}
+[data-presence='LISTENING'] {
+  --presence-accent: #aeefff;
+  --presence-wash: #aeefff0b;
+  --presence-border: #aeefff50;
+}
+[data-presence='THINKING'] {
+  --presence-accent: #ffdd9b;
+  --presence-wash: #ffdd9b0d;
+  --presence-border: #ffdd9b50;
+}
+[data-presence='SPEAKING'] {
+  --presence-accent: #c3e3db;
+  --presence-wash: #b6e7e40b;
+  --presence-border: #b6e7e450;
+}
+[data-presence='ALERT'] {
+  --presence-accent: #ff9569;
+  --presence-wash: #ff95690d;
+  --presence-border: #ff956955;
+}
+[data-presence='LOCKDOWN'] {
+  --presence-accent: #ff7584;
+  --presence-wash: #ff435617;
+  --presence-border: #ff435677;
+}
+[data-presence='OFFLINE'],
+[data-presence='RECONNECTING'] {
+  --presence-accent: #a7bccb;
+  --presence-wash: #a7bccb06;
+  --presence-border: #a7bccb33;
+}
+[data-presence] header,
+[data-presence] .voice-experience {
+  background-color: var(--presence-wash);
+  border-color: var(--presence-border);
+  transition:
+    background-color 400ms ease,
+    border-color 400ms ease;
+}
+[data-presence] .state-label,
+[data-presence] nav button.active,
+[data-presence] .body-caption h2 {
+  color: var(--presence-accent);
+  transition: color 400ms ease;
+}
+[data-presence] nav button.active {
+  border-color: var(--presence-border);
+  background: var(--presence-wash);
+}
+[data-presence] .nav-dot {
+  background: var(--presence-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-presence],
+  [data-presence] header,
+  [data-presence] .voice-experience,
+  [data-presence] .state-label,
+  [data-presence] nav button.active,
+  [data-presence] .body-caption h2 {
+    transition: none;
+  }
+}
+
+[data-reduced-motion='true'] [data-presence],
+[data-reduced-motion='true'] [data-presence] header,
+[data-reduced-motion='true'] [data-presence] .voice-experience,
+[data-reduced-motion='true'] [data-presence] .state-label,
+[data-reduced-motion='true'] [data-presence] nav button.active,
+[data-reduced-motion='true'] [data-presence] .body-caption h2 {
+  transition: none;
+}

@@ -59,3 +59,15 @@ intersection checks skip hidden/offscreen work. Resize/visibility invalidate the
 static frame so a cleared canvas is redrawn. Controlled native hidden/visible,
 quality-preset and sleep/wake measurements remain open. No privileged GPU-monitoring
 or operating-system security changes were made.
+
+## October 11–12 physical observations
+
+One owner-confirmed immediate wake/arithmetic/follow-up/stop trial recorded 345 ms
+first model token and 3,621 ms first generated audio (not instrumented acoustic
+onset). Longer-answer trials failed with microphone backlog recovery. A first
+packetization repair played audio at 20,887 ms after turn end, then interruption
+and recovery occurred. These are failed acceptance trials, not latency averages.
+The machine has 8 GiB memory; Qwen RSS was about 2.7 GiB and Docker's VM budget was
+4 GiB while its sole PostgreSQL container used about 31 MiB. Compression and swap
+were substantial. Docker's budget was reduced to 2 GiB on October 12; retesting is
+required before attributing the failure to memory pressure or declaring it fixed.

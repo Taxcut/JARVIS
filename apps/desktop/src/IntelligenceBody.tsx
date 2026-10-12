@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 export type BodyState =
-  'IDLE' | 'LISTENING' | 'THINKING' | 'SPEAKING' | 'ALERT' | 'OFFLINE';
+  | 'IDLE'
+  | 'LISTENING'
+  | 'THINKING'
+  | 'SPEAKING'
+  | 'ALERT'
+  | 'OFFLINE'
+  | 'LOCKDOWN'
+  | 'RECONNECTING';
 export type Quality = 'CINEMATIC' | 'HIGH' | 'BALANCED' | 'LOW_POWER';
 export const qualityProfiles: Record<
   Quality,
@@ -157,6 +164,8 @@ export function IntelligenceBody({
       scene.add(ring);
       rings.push(ring);
     }
+    const targetColor = new THREE.Color();
+    const speakingColor = new THREE.Color('#aeefff');
     let lastStatic = '';
     const invalidate = () => {
       lastStatic = '';
@@ -197,7 +206,9 @@ export function IntelligenceBody({
       const live =
         d.state === 'SPEAKING'
           ? Math.min(1, d.level * 7 + (d.bands[1] ?? 0) * 2)
-          : 0;
+          : d.state === 'LISTENING'
+            ? Math.min(1, d.level * 7)
+            : 0;
       const signature = `${d.state}:${live}:${renderer.domElement.width}:${renderer.domElement.height}`;
       if (reduced && signature === lastStatic) return;
       lastStatic = signature;
@@ -207,19 +218,60 @@ export function IntelligenceBody({
       material.uniforms.pulse!.value =
         d.state === 'LISTENING' ? 0.35 : d.state === 'THINKING' ? 0.2 : 0;
       material.uniforms.opacity!.value = d.state === 'OFFLINE' ? 0.3 : 0.84;
-      material.uniforms.color!.value.set(
-        d.state === 'ALERT'
-          ? '#ff8169'
-          : d.state === 'LISTENING'
-            ? '#aeefff'
-            : d.state === 'OFFLINE'
-              ? '#67868f'
-              : '#ffc775',
+      targetColor.set(
+        d.state === 'LOCKDOWN'
+          ? '#ff4356'
+          : d.state === 'ALERT'
+            ? '#ff9569'
+            : d.state === 'LISTENING'
+              ? '#aeefff'
+              : d.state === 'RECONNECTING'
+                ? '#a7bccb'
+                : d.state === 'OFFLINE'
+                  ? '#67868f'
+                  : d.state === 'THINKING'
+                    ? '#ffdd9b'
+                    : '#ffc775',
       );
-      group.rotation.y = time * (d.state === 'THINKING' ? 0.12 : 0.045);
+      if (d.state === 'SPEAKING')
+        targetColor.lerp(speakingColor, 0.25 + smoothed * 0.55);
+      material.uniforms.color!.value.lerp(
+        targetColor,
+        reduced ? 1 : Math.min(1, dt * 5),
+      );
+      tm.color.copy(material.uniforms.color!.value);
+      rings.forEach((r, i) => {
+        const ringMaterial = r.material as THREE.LineBasicMaterial;
+        ringMaterial.color.copy(material.uniforms.color!.value);
+        ringMaterial.opacity =
+          d.state === 'LOCKDOWN'
+            ? 0.24
+            : d.state === 'OFFLINE'
+              ? 0.05
+              : i === 4
+                ? 0.2
+                : 0.1;
+      });
+      group.rotation.y =
+        time *
+        (d.state === 'THINKING' || d.state === 'RECONNECTING'
+          ? 0.12
+          : d.state === 'LOCKDOWN'
+            ? 0.008
+            : 0.045);
       group.rotation.z = Math.sin(time * 0.09) * 0.08;
       rings.forEach((r, i) => {
-        r.rotation.z = time * (i % 2 ? -0.025 : 0.015);
+        r.rotation.z =
+          time *
+          (d.state === 'LOCKDOWN'
+            ? 0
+            : d.state === 'RECONNECTING'
+              ? i % 2
+                ? -0.1
+                : 0.08
+              : i % 2
+                ? -0.025
+                : 0.015);
       });
       renderer.render(scene, camera);
       // Observable compositor readiness for isolated visual capture, never a fake state.

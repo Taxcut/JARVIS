@@ -164,3 +164,12 @@ reachable-history secret scan passed before the implementation checkpoint push.
 Actual Mac UI controls verified mute/off capture shutdown and runtime restart
 with owner Keychain approval. Uncorroborated spoken-test reports remain pending;
 voice was enabled for the new owner test after Core recovery on October 9.
+
+### Audio backlog refinement (October 12)
+
+Capture and echo reference are packetized to 10 ms with at most 64 queued blocks
+per path plus one partial block. Callback sample limits, finite-value validation,
+bounded conversion, explicit overflow failure and generation/privacy fences remain.
+No transcript text is collected by the physical timing diagnostic. The current
+physical overload failure is an unresolved availability issue, not authorization
+for cloud fallback or execution capabilities.

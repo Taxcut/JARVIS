@@ -14,16 +14,19 @@ export function bodyState(
   phase: VoicePhase | undefined,
   connected: boolean,
 ): BodyState {
+  if (phase === 'LOCKDOWN') return 'LOCKDOWN';
   if (!connected) return 'OFFLINE';
+  if (phase === 'STARTING') return 'RECONNECTING';
+  if (
+    phase === 'AUTH_REQUIRED' ||
+    phase === 'UNAVAILABLE' ||
+    phase === 'SUSPENDED'
+  )
+    return 'OFFLINE';
   if (phase === 'SPEAKING') return 'SPEAKING';
   if (phase === 'LISTENING' || phase === 'INTERRUPTED') return 'LISTENING';
-  if (phase === 'THINKING' || phase === 'STARTING') return 'THINKING';
-  if (
-    phase === 'LOCKDOWN' ||
-    phase === 'DEGRADED' ||
-    phase === 'PERMISSION_REQUIRED'
-  )
-    return 'ALERT';
+  if (phase === 'THINKING') return 'THINKING';
+  if (phase === 'DEGRADED' || phase === 'PERMISSION_REQUIRED') return 'ALERT';
   return 'IDLE';
 }
 export function voiceHeadline(
@@ -90,8 +93,16 @@ export function VoiceExperience({
         >
           <IntelligenceBody
             state={state}
-            level={status?.outputLevel ?? 0}
-            bands={status?.outputBands ?? [0, 0, 0]}
+            level={
+              state === 'LISTENING'
+                ? (status?.inputLevel ?? 0)
+                : (status?.outputLevel ?? 0)
+            }
+            bands={
+              state === 'SPEAKING'
+                ? (status?.outputBands ?? [0, 0, 0])
+                : [0, 0, 0]
+            }
             quality={quality}
             reduced={reduced}
           />
@@ -273,13 +284,13 @@ export function VoiceSettings({ voice }: { voice: Voice }) {
       <div className="eyebrow">VOICE & PRESENCE</div>
       <h2>A voice that feels familiar.</h2>
       <p>
-        British English · Kokoro · George. Wake detection, transcription and
-        Qwen conversation run locally. No paid voice API is required.
+        A calm British voice. Listening, conversation and speech stay on this
+        device. No paid voice account is required.
       </p>
       {voice.status && (
         <p className="hint" role="status">
           Speech recognition: {voice.status.sttReady ? 'Ready' : 'Not loaded'} ·
-          Local Qwen:{' '}
+          Conversation:{' '}
           {
             (
               {
@@ -305,10 +316,11 @@ export function VoiceSettings({ voice }: { voice: Voice }) {
             asks.
           </li>
           <li>
-            Wake detection, speech recognition and the George voice need their
-            verified local models. Missing or damaged models need local setup
-            repair; reconnecting alone does not download them. Qwen loads on
-            your first question, so the first answer can take longer.
+            Voice needs its local speech and conversation files. If setup
+            reports missing or damaged files, follow the repair guide in
+            JARVISSETUP. Reconnecting alone does not download them. Conversation
+            prepares on your first question, so the first answer can take
+            longer.
           </li>
           <li>
             When Core says “Say Jarvis,” say “Jarvis, what is two plus two?”

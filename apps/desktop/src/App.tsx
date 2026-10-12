@@ -1,6 +1,10 @@
 import { Notice } from './Notice.js';
 import { ProductIcon } from './ProductIcon.js';
-import { VoiceExperience, VoiceSettings } from './VoiceExperience.js';
+import {
+  bodyState,
+  VoiceExperience,
+  VoiceSettings,
+} from './VoiceExperience.js';
 import { useVoice } from './use-voice.js';
 import { BootSequence } from './BootSequence.js';
 import { RuntimePanel } from './RuntimePanel.js';
@@ -141,6 +145,7 @@ export function App() {
           : 'Good evening';
   return (
     <div
+      data-presence={bodyState(voice.status?.phase, identity.sync === 'LIVE')}
       className={`shell ${!setup && (page === 'Core' || page === 'Assistant') ? 'presence-page' : ''}`}
     >
       <a className="skip-link" href="#main-content">

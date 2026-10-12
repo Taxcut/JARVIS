@@ -184,3 +184,13 @@ checking state instead of briefly claiming the helper is stopped. Local voice
 setup guidance is an expandable native section; enabling voice and OS microphone
 permission remain explicit. Fixed synthetic resource probes are separate from
 owner physical acceptance; measured cold-start latency remains documented.
+
+## 2026-10-12 — Bound audio backlog by duration
+
+Normalize native capture and echo-reference callbacks into 10 ms blocks before
+bounded queues (64 blocks each). Backend-specific callback sizes must not silently
+reduce overload tolerance to a few tens of milliseconds. Overflow still stops and
+recovers audio; queues are not unbounded and no old generation may resume playback.
+Physical overload investigation remains open. The owner's 8 GiB development Mac
+uses a 2 GiB Docker VM for its single PostgreSQL container; this is a measured local
+resource adjustment, not a universal production memory recommendation.
