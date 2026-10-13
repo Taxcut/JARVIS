@@ -82,3 +82,9 @@ at 52ceb39. The Mac long-answer retest after reducing Docker memory is still pen
 
 Three isolated Windows cold model/TTS repeats passed (2926/2951/2977 ms first token;
 5598/5509/5548 ms generated audio). The end-to-end recognition failure remains open.
+
+Current c23d51e hosted Linux/macOS/Windows and real Windows release desktop/runtime
+checks passed. A subsequent navigation-scroll correction passed browser validation,
+types/lint/format/build and 13 visual-component tests; final native installation
+remains pending. A 600-sample Mac observation saw no new wake; the owner spoken
+retest remains pending, not passed. Required physical/lifecycle gates still block merge.

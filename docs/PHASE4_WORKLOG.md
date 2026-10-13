@@ -512,3 +512,26 @@ recognition/answer path; it does not establish general cold-start reliability.
 Mac targeted probe Clippy (warnings denied), Rust formatting, documentation format
 and candidate/history secret scan passed. Windows release probe compiled with the
 existing LNK4098 warning. No operating-system security policy was changed.
+
+### Native product follow-up
+
+The c23d51e Windows release desktop/runtime build, Rust formatting and targeted
+probe Clippy passed. Hosted Validate 38341650652 passed Linux/macOS/Windows on
+c23d51e. The existing LNK4098 native-link warning remains maintenance work.
+
+Native Settings inspection exposed retained document scroll on section navigation,
+hiding the new page heading. Navigation now resets scroll synchronously for page
+or setup changes. Browser verification moved from a scrolled Core (290.5 px) to
+a still-scrollable Settings page at zero, with the heading visible at 134 px.
+Targeted desktop types/lint/format, production build and all 13 visual-component
+tests passed. This correction still needs the final installed native build; the
+installed app remains 1d92bcc while the physical voice investigation continues.
+
+The new 600-sample Mac observation stayed WAKE_ONLY with wake count 1 throughout.
+There was no new spoken test; do not treat ambient input as acceptance. The owner
+question is pending: say Jarvis, pause, request a solar-system description, let it
+finish, then stop listening. Verify timing/state alongside the owner's actual
+listening report before deciding whether memory adjustment helped. No new Keychain
+approval is required for that current-build test. Next: investigate that result,
+finish the required Mac physical/product/lifecycle matrix, then final native gates
+and conditional merge. PR #4 remains draft. Prompt #5 is not started.

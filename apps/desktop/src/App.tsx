@@ -12,7 +12,7 @@ import { useIdentity } from './use-identity.js';
 import { IdentityViews, IdentityEntry } from './IdentityViews.js';
 import { api } from './identity-client.js';
 import { setupStatusSchema } from '@jarvis/protocol';
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { createClient } from '@jarvis/api-client';
 import type { SetupStatus } from '@jarvis/protocol';
 const sections = [
@@ -88,6 +88,9 @@ const empty: Record<Section, [string, string]> = {
 export function App() {
   const [page, setPage] = useState<Section>('Core');
   const [setup, setSetup] = useState(false);
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [page, setup]);
   const [token, setToken] = useState('');
   const [base, setBase] = useState('http://127.0.0.1:4310');
   const identity = useIdentity(base);
