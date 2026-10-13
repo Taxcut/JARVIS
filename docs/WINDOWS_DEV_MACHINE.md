@@ -194,3 +194,36 @@ private model directory. Do not stop an unidentified listener or broaden account
 privileges; the owner may quit the existing Ollama app, after which the normal
 pinned JARVIS launcher can be validated. Earlier failed cold/STT observations remain
 in PHASE4_WORKLOG; they have not been replaced by a claimed reliable cold-start pass.
+
+### Windows listener resolution and cold-repeat results — October 12
+
+The owner quit the existing Windows Ollama tray app. The normal JARVIS launcher
+then started its pinned local service and completed the synthetic pipeline. The
+port/catalog conflict is resolved for this run; the inaccessible process's exact
+owner and configuration were not established.
+
+Three explicitly unloaded-model end-to-end trials then produced two passes and
+one failure. First-token timings were 2618, 2685 and 2210 ms. The middle STT result
+was “is too plus two”; Qwen requested clarification and failed the arithmetic
+answer assertion. The other trials produced first generated audio at 4856 and
+4765 ms after STT. These are silent synthetic measurements, not physical speaker
+latency. Three reliable end-to-end cold passes have NOT been established.
+
+The probe now has an explicit `--model-only` diagnostic mode using fixed text to
+isolate Qwen cold loading and Kokoro from recognition accuracy. Default behavior
+still sends the actual STT result and requires the correct answer. Model-only
+success cannot close the failed end-to-end or physical voice acceptance gates.
+
+Hosted Validate 38204098451 passed Linux/macOS/Windows at 52ceb397e8e892a7dca598d6b30131a659962a7a.
+This precedes the diagnostic-only probe change. Mac physical retest after the
+Docker memory adjustment remains pending; no new wake was observed. PR #4 stays
+draft and unmerged, and Prompt #5 is not started.
+
+The isolated Windows model-only service-start probe and all three unloaded-model
+repeats passed. Cold first-token timings were 2926/2951/2977 ms and first generated
+audio was ready at 5598/5509/5548 ms from the fixed text submission. No microphone
+or physical playback was used. This narrows the failed end-to-end repeat to the
+recognition/answer path; it does not establish general cold-start reliability.
+Mac targeted probe Clippy (warnings denied), Rust formatting, documentation format
+and candidate/history secret scan passed. Windows release probe compiled with the
+existing LNK4098 warning. No operating-system security policy was changed.

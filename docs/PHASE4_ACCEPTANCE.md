@@ -71,3 +71,14 @@ with an empty catalog. No Windows security exception or alternative architecture
 was introduced. Owner actions for the Mac spoken retest and Windows listener are
 pending. The UI lockdown/secure-storage-loading correction passes 51 TS tests;
 19 PostgreSQL integration tests passed after restart.
+
+### Latest Windows follow-up
+
+Owner quitting Ollama resolved the listener/catalog conflict. Three end-to-end cold
+trials produced two passes and one recognition/model-answer failure; retain it as
+open. The explicit model-only probe isolates service reliability and cannot replace
+STT or physical acceptance. Validate 38204098451 passed all three hosted platforms
+at 52ceb39. The Mac long-answer retest after reducing Docker memory is still pending.
+
+Three isolated Windows cold model/TTS repeats passed (2926/2951/2977 ms first token;
+5598/5509/5548 ms generated audio). The end-to-end recognition failure remains open.

@@ -71,3 +71,17 @@ The machine has 8 GiB memory; Qwen RSS was about 2.7 GiB and Docker's VM budget 
 4 GiB while its sole PostgreSQL container used about 31 MiB. Compression and swap
 were substantial. Docker's budget was reduced to 2 GiB on October 12; retesting is
 required before attributing the failure to memory pressure or declaring it fixed.
+
+## October 12 Windows cold isolation
+
+After the owner quit the conflicting Ollama app, three explicitly unloaded-model
+end-to-end trials yielded two passes and one failure: the recognized phrase “is
+too plus two” caused a clarification response. Passed trials reached generated
+audio at 4856/4765 ms after STT; do not omit the failed middle trial.
+
+The explicit `local_probe --model-only` diagnostic separately starts with fixed
+text and requires a correct answer plus Kokoro synthesis. Its three cold trials
+passed with first-token timings 2926/2951/2977 ms and first generated audio at
+5598/5509/5548 ms from text submission. Each trial verified model unload first.
+These silent synthetic results do not measure physical playback or establish
+recognition accuracy; default end-to-end assertions remain unchanged.

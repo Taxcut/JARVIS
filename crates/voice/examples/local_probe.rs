@@ -14,46 +14,59 @@ use std::{
 };
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.iter().any(|arg| arg != "--model-only") || args.len() > 1 {
+        return Err("Usage: local_probe [--model-only]".into());
+    }
+    let model_only = args.first().is_some_and(|arg| arg == "--model-only");
     local::installed().await.map_err(|(_, e)| e)?;
     let root = models::model_root()?;
     models::verify(&root)?;
     let tts = models::Kokoro::load(&root)?;
-    let samples = tts.synthesize(
-        "What is two plus two?",
-        0.96,
-        Arc::new(AtomicU64::new(0)),
-        0,
-    )?;
-    let mut input = jarvis_voice::audio::resample_playback(&samples, 24000, 16000);
-    input.extend(vec![0.0; 32000]);
-    let load = Instant::now();
-    let mut recognizer = stt::Recognizer::load(&models::stt_root()?)?;
-    println!("STT load_ms={}", load.elapsed().as_millis());
-    let decode = Instant::now();
-    let mut first = None;
-    let mut final_text = String::new();
-    for (i, frame) in input.chunks(160).enumerate() {
-        if let Some(update) = recognizer.feed(frame)? {
-            first.get_or_insert(i * 10);
-            if update.final_text {
-                final_text = update.text;
-                break;
+    let final_text = if model_only {
+        // Separate lifecycle reliability from recognition accuracy. The default
+        // end-to-end probe still requires actual STT and a correct answer.
+        println!("MODEL_ONLY: fixed text → Qwen → Kokoro; STT and physical audio NOT tested");
+        "What is two plus two?".to_owned()
+    } else {
+        let samples = tts.synthesize(
+            "What is two plus two?",
+            0.96,
+            Arc::new(AtomicU64::new(0)),
+            0,
+        )?;
+        let mut input = jarvis_voice::audio::resample_playback(&samples, 24000, 16000);
+        input.extend(vec![0.0; 32000]);
+        let load = Instant::now();
+        let mut recognizer = stt::Recognizer::load(&models::stt_root()?)?;
+        println!("STT load_ms={}", load.elapsed().as_millis());
+        let decode = Instant::now();
+        let mut first = None;
+        let mut final_text = String::new();
+        for (i, frame) in input.chunks(160).enumerate() {
+            if let Some(update) = recognizer.feed(frame)? {
+                first.get_or_insert(i * 10);
+                if update.final_text {
+                    final_text = update.text;
+                    break;
+                }
             }
         }
-    }
-    println!("Synthetic fixture transcript: {final_text:?}");
-    // Accept the spoken numeral's homophones, but send the unmodified STT
-    // result to the model. A correct answer is still required below.
-    let spoken = final_text.to_lowercase().replace("too", "two");
-    assert!(
-        spoken.contains("two plus two") || spoken.contains("to plus two"),
-        "Synthetic STT arithmetic fixture failed"
-    );
-    println!(
-        "STT fixture passed; first_partial_audio_ms={first:?}; decode_ms={}; audio_ms={}",
-        decode.elapsed().as_millis(),
-        input.len() / 16
-    );
+        println!("Synthetic fixture transcript: {final_text:?}");
+        // Accept the spoken numeral's homophones, but send the unmodified STT
+        // result to the model. A correct answer is still required below.
+        let spoken = final_text.to_lowercase().replace("too", "two");
+        assert!(
+            spoken.contains("two plus two") || spoken.contains("to plus two"),
+            "Synthetic STT arithmetic fixture failed"
+        );
+        println!(
+            "STT fixture passed; first_partial_audio_ms={first:?}; decode_ms={}; audio_ms={}",
+            decode.elapsed().as_millis(),
+            input.len() / 16
+        );
+        final_text
+    };
     let (tx, mut rx) = tokio::sync::mpsc::channel(64);
     let started = Instant::now();
     let task = tokio::spawn(async move {
@@ -112,6 +125,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     drop(speech);
     let (first_audio_ms, tts_ms, output_ms) =
         synthesis.join().map_err(|_| "Speech worker failed")??;
-    println!("Local STT → Qwen → Kokoro synthetic pass; first_sentence_tts_ms={tts_ms}; first_sentence_output_ms={output_ms}; post_stt_first_audio_ms={first_audio_ms}");
+    println!("Synthetic pass (model_only={model_only}); first_sentence_tts_ms={tts_ms}; first_sentence_output_ms={output_ms}; post_stt_first_audio_ms={first_audio_ms}");
     Ok(())
 }
