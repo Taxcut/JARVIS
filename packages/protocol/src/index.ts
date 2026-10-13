@@ -18,14 +18,14 @@ export const systemSchema = z.strictObject({
   name: z.literal('JARVIS Core'),
   version: z.string(),
   protocolVersion: z.literal(1),
-  phase: z.literal(3),
+  phase: z.literal(4),
 });
 export const setupStatusSchema = z.strictObject({
   configured: z.literal(false),
   core: z.enum(['not_configured', 'verified']),
   owner: z.enum(['not_implemented', 'required', 'ready']),
   deviceEnrollment: z.enum(['not_implemented', 'required', 'ready']),
-  voice: z.literal('not_implemented'),
+  voice: z.literal('device_setup_required'),
   phoneLink: z.literal('not_implemented'),
   security: z.enum(['setup_required', 'recovery_required', 'ready']),
   systemTest: z.literal('not_implemented'),
@@ -135,3 +135,5 @@ export const setupVerifySchema = z.strictObject({});
 export * from './identity.js';
 
 export * from './runtime.js';
+
+export * from './voice.js';

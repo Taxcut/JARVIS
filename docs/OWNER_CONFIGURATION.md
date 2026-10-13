@@ -42,3 +42,17 @@ Tracked examples retain only blank names: `OPENAI_API_KEY`, `TWILIO_ACCOUNT_SID`
 ## Phase 2 validation boundary
 
 The original document did not override the earlier Mac validation deferral. The owner's later explicit continuation resumed and completed Mac Keychain approval, restart/resume, additional passkey sign-in, recovery setup and authenticated GUI/reconnect checks. The owner intentionally deferred Windows Hello/Credential Manager physical validation to the Gaming PC later; it is not a Mac closure blocker. No secure-storage bypass is permitted. IMPLEMENTATION_STATUS distinguishes real physical evidence, automated recovery-consumption tests and the pending Windows checks.
+
+## Phase 4 update (supersedes planned-only voice readiness above)
+
+The approved voice choices are incorporated: sherpa-onnx local Jarvis/Hey Jarvis,
+local sherpa streaming STT and Qwen3 4B Instruct conversation (the owner’s
+2026-10-02 decision supersedes OpenAI as the default), local Kokoro `bm_george` at 0.96 initial pace,
+Sir persona and America/New_York greeting. Verified model packs are installed on
+the Mac; the actual UI reports granted microphone capture/local wake readiness.
+Owner spoken acceptance is still pending. The historical cloud probe accepted credential/session creation but reported
+exhausted API credit. It is no longer a blocker or required owner action. The
+local STT/Qwen stack must pass separate real conversation acceptance.
+Secrets remain in existing private configuration and were not copied into docs.
+The approved Downloads logo was incorporated unchanged with derived native assets.
+Future phone, scheduling, remote and computer execution preferences remain planned.

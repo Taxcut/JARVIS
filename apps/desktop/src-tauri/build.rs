@@ -12,6 +12,9 @@ fn main() {
             "runtime_reconnect",
             "runtime_stop",
             "runtime_startup",
+            "voice_configure",
+            "voice_devices",
+            "voice_control",
         ]),
     ))
     .expect("Could not build desktop permissions");

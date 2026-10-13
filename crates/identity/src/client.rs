@@ -269,6 +269,7 @@ impl NativeClient {
                     | ("POST", "/api/v1/runtime/register")
                     | ("POST", "/api/v1/runtime/heartbeat")
                     | ("POST", "/api/v1/runtime/stop")
+                    | ("POST", "/api/v1/voice/session")
             )
         {
             return Err("Runtime route not permitted".into());

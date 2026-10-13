@@ -152,3 +152,78 @@ The development app rendered through the loopback Vite server. The release app r
 Start runtime launched one supervisor/worker pair. Closing the dashboard left the same pair alive; reopening the release dashboard rediscovered it. The runtime reported AUTH_REQUIRED after normal desktop initialization of its local Credential Manager identity, with no authenticated Core session. No existing enrollment was replaced and no Mac identity was imported. Stop runtime through the desktop stopped both processes. All temporary development-server processes were stopped. Per-user startup was restored to disabled after validation.
 
 The installed release helper also launched after the September 29 reboot from the protected installation path as exactly one supervisor/worker pair. It reported AUTH_REQUIRED, and the desktop Stop runtime control stopped both processes. Startup remained disabled.
+
+## Phase 4 remote validation checkpoint
+
+Standard-user SSH fetched `feat/phase4-voice-cinematic` at 18d922b. Verified native
+sherpa-onnx assets and `cargo check -p jarvis-voice -p jarvis-runtime --locked`
+succeeded on the Gaming PC, including CPAL, Kokoro/sherpa, echo processing and TLS.
+Hosted Validate 36683188583 independently passed full Windows native tests/builds.
+
+Local `pnpm install --frozen-lockfile` encountered Windows error 448 while reading
+the esbuild package through an untrusted dependency junction. Preserve the earlier
+RedirectionGuard diagnostic and trusted-link recovery procedure. No SAC, Defender,
+UAC or RedirectionGuard setting was weakened. This is not a local TypeScript pass.
+Additional native application/model checks and physical Windows enrollment/audio
+acceptance remain explicitly pending. Do not import the Mac identity to Windows.
+
+### Phase 4 local voice continuation
+
+The 2026-10-02 local default requires sherpa streaming STT and pinned local Qwen
+in addition to existing wake/Kokoro. `pnpm voice:local-setup` supports the pinned
+Windows x64 Ollama archive, loopback-only service and the same Qwen digest; it
+never changes Defender, Firewall, Smart App Control or RedirectionGuard. Existing
+9a242d3 native build/28-test evidence predates this change. Updated Windows local
+inference and native build validation remain pending; physical microphone and
+owner enrollment are separate. Remote availability has resumed.
+
+### October 12 Phase 4 checkpoint
+
+The standard-user checkout fast-forwarded to 1d92bcc. Voice/runtime/identity Clippy
+and 37 tests passed; release desktop, helper and local probe builds passed with
+the existing LNK4098 warning. The full debug workspace command failed before
+running the desktop build helper with Application Control error 4551. This is not
+a full local workspace pass; hosted Validate 38203593660 separately passed Windows.
+The pnpm junction limitation remains, so the native build used the checkpoint's
+Mac-built frontend output copied into ignored dist, without changing lockfiles.
+
+Repeated cold model checks were blocked before inference by an existing port-11434
+listener with an empty catalog. Its executable path was not accessible from the
+restricted account. The pinned JARVIS model manifest still exists in that account's
+private model directory. Do not stop an unidentified listener or broaden account
+privileges; the owner may quit the existing Ollama app, after which the normal
+pinned JARVIS launcher can be validated. Earlier failed cold/STT observations remain
+in PHASE4_WORKLOG; they have not been replaced by a claimed reliable cold-start pass.
+
+### Windows listener resolution and cold-repeat results — October 12
+
+The owner quit the existing Windows Ollama tray app. The normal JARVIS launcher
+then started its pinned local service and completed the synthetic pipeline. The
+port/catalog conflict is resolved for this run; the inaccessible process's exact
+owner and configuration were not established.
+
+Three explicitly unloaded-model end-to-end trials then produced two passes and
+one failure. First-token timings were 2618, 2685 and 2210 ms. The middle STT result
+was “is too plus two”; Qwen requested clarification and failed the arithmetic
+answer assertion. The other trials produced first generated audio at 4856 and
+4765 ms after STT. These are silent synthetic measurements, not physical speaker
+latency. Three reliable end-to-end cold passes have NOT been established.
+
+The probe now has an explicit `--model-only` diagnostic mode using fixed text to
+isolate Qwen cold loading and Kokoro from recognition accuracy. Default behavior
+still sends the actual STT result and requires the correct answer. Model-only
+success cannot close the failed end-to-end or physical voice acceptance gates.
+
+Hosted Validate 38204098451 passed Linux/macOS/Windows at 52ceb397e8e892a7dca598d6b30131a659962a7a.
+This precedes the diagnostic-only probe change. Mac physical retest after the
+Docker memory adjustment remains pending; no new wake was observed. PR #4 stays
+draft and unmerged, and Prompt #5 is not started.
+
+The isolated Windows model-only service-start probe and all three unloaded-model
+repeats passed. Cold first-token timings were 2926/2951/2977 ms and first generated
+audio was ready at 5598/5509/5548 ms from the fixed text submission. No microphone
+or physical playback was used. This narrows the failed end-to-end repeat to the
+recognition/answer path; it does not establish general cold-start reliability.
+Mac targeted probe Clippy (warnings denied), Rust formatting, documentation format
+and candidate/history secret scan passed. Windows release probe compiled with the
+existing LNK4098 warning. No operating-system security policy was changed.

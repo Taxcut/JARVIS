@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.taxcut.jarvis.runtime</string>
+<key>CFBundleName</key><string>JARVIS Runtime</string>
+<key>NSMicrophoneUsageDescription</key><string>JARVIS listens locally for its wake phrase. After you wake JARVIS, speech recognition, conversation and voice output are processed locally on this device. Mute or turn voice off in JARVIS to stop capture.</string>
+</dict></plist>

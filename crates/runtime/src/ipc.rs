@@ -10,6 +10,10 @@ use tokio::{
 #[serde(tag = "command", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
     Status {},
+    VoiceConfigure { settings: jarvis_voice::Settings },
+    VoiceRetry {},
+    VoiceClear {},
+    VoiceGreet {},
     Reconnect {},
     Stop {},
     Provision { base: String, session: Value },
@@ -170,6 +174,25 @@ mod tests {
             .unwrap()
             .unwrap();
         std::fs::remove_dir_all(dir).unwrap();
+    }
+    #[test]
+    fn worst_case_voice_snapshot_fits_the_private_ipc_budget() {
+        let mut status = Status::default();
+        status.voice.settings.input_device = Some("\"".repeat(512));
+        status.voice.settings.output_device = Some("\"".repeat(512));
+        for i in 0..6 {
+            status.voice.transcript(
+                &format!("{}{}", "🜂".repeat(79), i),
+                "assistant",
+                &"🜂".repeat(500),
+                false,
+            );
+        }
+        let reply = Reply {
+            status: Some(status),
+            error: None,
+        };
+        assert!(serde_json::to_vec(&reply).unwrap().len() < LIMIT - 1024);
     }
     #[tokio::test]
     async fn rejects_oversize_and_unknown_commands() {

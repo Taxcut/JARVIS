@@ -1,3 +1,6 @@
+import { ConfirmAction } from './ConfirmAction.js';
+import { isTauri } from './identity-client.js';
+import { Notice } from './Notice.js';
 import { useState } from 'react';
 import type { IdentityController } from './use-identity.js';
 const time = (value: string | null) =>
@@ -70,7 +73,13 @@ export function IdentityEntry({
           {identity.native.fingerprint.slice(0, 16)}
         </p>
       ) : (
-        <p>Open the native JARVIS desktop to use secure device identity.</p>
+        <p role="status">
+          {isTauri()
+            ? identity.error
+              ? 'Identity is unavailable until secure storage can be opened.'
+              : 'Opening your secure identity… Complete any system approval to continue.'
+            : 'Open the native JARVIS desktop to use secure device identity.'}
+        </p>
       )}
       <div className="actions">
         <button
@@ -149,8 +158,8 @@ export function IdentityFeedback({
 }) {
   return (
     <div role="status" aria-live="polite">
-      {identity.notice && <p>{identity.notice}</p>}
-      {identity.error && <p className="error">{identity.error}</p>}
+      <Notice message={identity.notice} severity="info" />
+      <Notice message={identity.error} />
     </div>
   );
 }
@@ -253,7 +262,10 @@ export function IdentityViews({
                           })
                         }
                       />
-                      <button
+                      <ConfirmAction
+                        action="Revoke this device?"
+                        consequence="This device will lose trusted access and its sessions will be revoked. If it is your current device, JARVIS will disconnect."
+                        reversal="Revocation cannot be undone. The device must be enrolled again through a trusted device."
                         disabled={disabled || !normal}
                         onClick={() =>
                           void identity.mutate(
@@ -268,7 +280,7 @@ export function IdentityViews({
                         }
                       >
                         Revoke device
-                      </button>
+                      </ConfirmAction>
                     </>
                   )}
                 </div>
@@ -313,7 +325,10 @@ export function IdentityViews({
                   </div>
                   {e.status === 'REQUESTED' && (
                     <div className="actions">
-                      <button
+                      <ConfirmAction
+                        action="Trust this enrollment request?"
+                        consequence="The requesting device will become trusted. Compare its key fingerprint through a channel you trust before continuing."
+                        reversal="You can revoke the device later. Approval does not grant computer execution capabilities."
                         disabled={disabled || !normal}
                         onClick={() =>
                           void identity.mutate(
@@ -329,7 +344,7 @@ export function IdentityViews({
                         }
                       >
                         Verify & approve
-                      </button>
+                      </ConfirmAction>
                       <button
                         disabled={disabled || !normal}
                         onClick={() =>
@@ -385,7 +400,10 @@ export function IdentityViews({
                         })
                       }
                     />
-                    <button
+                    <ConfirmAction
+                      action="Revoke this passkey?"
+                      consequence="This passkey will no longer be accepted for sign-in or verification."
+                      reversal="This cannot be undone. Keep another working passkey; JARVIS prevents removing the last active passkey."
                       disabled={
                         disabled ||
                         !normal ||
@@ -404,7 +422,7 @@ export function IdentityViews({
                       }
                     >
                       Revoke passkey
-                    </button>
+                    </ConfirmAction>
                   </div>
                 )}
               </article>
@@ -422,7 +440,14 @@ export function IdentityViews({
               {s.recoveryCodesRemaining} unused codes. Keep them offline
               somewhere safe. Recovery also requires an existing trusted device.
             </p>
-            <button
+            <ConfirmAction
+              action={
+                s.recoveryCodesRemaining
+                  ? 'Replace recovery codes?'
+                  : 'Generate recovery codes?'
+              }
+              consequence="A fresh set will be shown once. Every previous recovery code becomes invalid."
+              reversal="Save the new codes privately before hiding them. Old codes cannot be restored; another verified replacement is possible."
               disabled={disabled || !normal}
               onClick={() =>
                 void identity
@@ -444,7 +469,7 @@ export function IdentityViews({
               {s.recoveryCodesRemaining
                 ? 'Replace recovery codes'
                 : 'Generate recovery codes'}
-            </button>
+            </ConfirmAction>
             {codes && (
               <div className="secret-box">
                 <p>
@@ -466,7 +491,14 @@ export function IdentityViews({
               and approvals. Owner authentication, inspection and explicit
               unlock remain available. Computer execution is not implemented.
             </p>
-            <button
+            <ConfirmAction
+              action={normal ? 'Enter lockdown?' : 'Leave lockdown?'}
+              consequence={
+                normal
+                  ? 'Voice stops, security changes are blocked, and pending enrollments and approvals are cancelled.'
+                  : 'Normal trusted operation and security changes become available again.'
+              }
+              reversal="Entering or leaving lockdown requires passkey verification. Cancelled requests are not restored when lockdown ends."
               disabled={disabled}
               onClick={() =>
                 void identity.mutate(
@@ -481,7 +513,7 @@ export function IdentityViews({
               }
             >
               {normal ? 'Enter lockdown' : 'Verify & leave lockdown'}
-            </button>
+            </ConfirmAction>
           </section>
           <section className="panel identity-panel">
             <h2>Sessions</h2>
@@ -503,7 +535,10 @@ export function IdentityViews({
                   <small>Absolute expiry {time(v.expiresAt)}</small>
                 </div>
                 {!v.revokedAt && (
-                  <button
+                  <ConfirmAction
+                    action="Revoke this session?"
+                    consequence="This session will stop receiving trusted access. Revoking the current session signs you out."
+                    reversal="Sign in again with a valid passkey to create a new session."
                     disabled={disabled || !normal}
                     onClick={() =>
                       void identity.mutate(
@@ -518,7 +553,7 @@ export function IdentityViews({
                     }
                   >
                     Revoke session
-                  </button>
+                  </ConfirmAction>
                 )}
               </article>
             ))}

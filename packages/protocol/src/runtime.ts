@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export const RUNTIME_PROTOCOL_VERSION = 1 as const;
+export const RUNTIME_PROTOCOL_VERSION = 2 as const;
 export const runtimeStateSchema = z.enum([
   'UNCONFIGURED',
   'STARTING',
@@ -28,8 +28,8 @@ export const runtimeCapabilitiesSchema = z.strictObject({
   'runtime.realtime': runtimeCapabilityStateSchema,
   'runtime.autostart': runtimeCapabilityStateSchema,
   'runtime.sleep_wake': runtimeCapabilityStateSchema,
-  'voice.wake_word': z.literal('UNAVAILABLE'),
-  'audio.capture': z.literal('UNAVAILABLE'),
+  'voice.wake_word': runtimeCapabilityStateSchema,
+  'audio.capture': runtimeCapabilityStateSchema,
   'screen.capture': z.literal('UNAVAILABLE'),
   'computer.keyboard': z.literal('UNAVAILABLE'),
   'computer.mouse': z.literal('UNAVAILABLE'),
@@ -67,8 +67,8 @@ export const runtimePresenceSchema = runtimeReportSchema.extend({
 });
 export const runtimeCompatibilitySchema = z.strictObject({
   version: z.literal(1),
-  runtimeProtocolVersion: z.literal(1),
-  minimumRuntimeProtocolVersion: z.literal(1),
+  runtimeProtocolVersion: z.literal(2),
+  minimumRuntimeProtocolVersion: z.literal(2),
   heartbeatSeconds: z.literal(30),
   leaseSeconds: z.literal(90),
   executionAvailable: z.literal(false),

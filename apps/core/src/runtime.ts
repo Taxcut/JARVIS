@@ -14,8 +14,8 @@ export async function registerRuntime(
   app.get('/api/v1/runtime/compatibility', async () =>
     runtimeCompatibilitySchema.parse({
       version: 1,
-      runtimeProtocolVersion: 1,
-      minimumRuntimeProtocolVersion: 1,
+      runtimeProtocolVersion: 2,
+      minimumRuntimeProtocolVersion: 2,
       heartbeatSeconds: 30,
       leaseSeconds: 90,
       executionAvailable: false,
@@ -41,7 +41,7 @@ export async function registerRuntime(
   for (const operation of ['register', 'heartbeat', 'stop'] as const) {
     app.post(`/api/v1/runtime/${operation}`, async (req) => {
       const input = runtimeReportSchema.parse(req.body);
-      if (input.runtimeProtocolVersion !== 1)
+      if (input.runtimeProtocolVersion !== 2)
         deny('RUNTIME_UPDATE_REQUIRED', 426);
       if (operation === 'stop' && input.state !== 'STOPPING')
         deny('INVALID_REQUEST', 400);
@@ -128,7 +128,7 @@ export async function registerRuntime(
         );
         return {
           version: 1,
-          runtimeProtocolVersion: 1,
+          runtimeProtocolVersion: 2,
           instanceId: input.instanceId,
           revision: result.revision,
           lastSeen: result.last_seen.toISOString(),

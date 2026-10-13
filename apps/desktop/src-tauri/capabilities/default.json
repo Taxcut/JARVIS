@@ -14,6 +14,9 @@
     "allow-runtime-connect",
     "allow-runtime-reconnect",
     "allow-runtime-stop",
-    "allow-runtime-startup"
+    "allow-runtime-startup",
+    "allow-voice-configure",
+    "allow-voice-devices",
+    "allow-voice-control"
   ]
 }

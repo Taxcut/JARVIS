@@ -22,4 +22,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: pnpm install --frozen-lockfile
       - run: pnpm runtime:prepare --release
-      - run: pnpm --filter @jarvis/desktop tauri build --no-bundle
+      - if: runner.os == 'macOS'
+        run: pnpm --filter @jarvis/desktop tauri build --bundles app
+      - if: runner.os == 'macOS'
+        run: pnpm desktop:verify-macos
+      - if: runner.os == 'Windows'
+        run: pnpm --filter @jarvis/desktop tauri build --no-bundle

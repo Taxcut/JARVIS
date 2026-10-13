@@ -171,7 +171,7 @@ export async function createApp(
       name: 'JARVIS Core',
       version: '0.1.0',
       protocolVersion: 1,
-      phase: 3,
+      phase: 4,
     }),
   );
   app.get('/api/v1/setup/status', async () =>

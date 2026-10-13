@@ -1,3 +1,4 @@
+mod tray;
 use jarvis_identity::client::{NativeClient, NativeStatus};
 use serde_json::Value;
 use tokio::sync::Mutex;
@@ -114,10 +115,32 @@ async fn runtime_stop() -> Result<jarvis_runtime::ipc::Reply, String> {
 async fn runtime_startup(enable: Option<bool>) -> Result<String, String> {
     jarvis_runtime::platform::startup(enable)
 }
+#[tauri::command]
+async fn voice_configure(
+    settings: jarvis_voice::Settings,
+) -> Result<jarvis_runtime::ipc::Reply, String> {
+    settings.validate().map_err(str::to_string)?;
+    jarvis_runtime::ipc::request(jarvis_runtime::ipc::Command::VoiceConfigure { settings }).await
+}
+#[tauri::command]
+async fn voice_devices() -> Result<Vec<jarvis_voice::audio::Device>, String> {
+    jarvis_voice::audio::devices().map_err(str::to_string)
+}
+#[tauri::command]
+async fn voice_control(action: String) -> Result<jarvis_runtime::ipc::Reply, String> {
+    let command = match action.as_str() {
+        "retry" => jarvis_runtime::ipc::Command::VoiceRetry {},
+        "clear" => jarvis_runtime::ipc::Command::VoiceClear {},
+        "greet" => jarvis_runtime::ipc::Command::VoiceGreet {},
+        _ => return Err("Unknown voice control".into()),
+    };
+    jarvis_runtime::ipc::request(command).await
+}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     debug_assert!(!jarvis_runtime::status().execution_available);
     tauri::Builder::default()
+        .setup(tray::setup)
         .manage(IdentityState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             native_status,
@@ -130,7 +153,10 @@ pub fn run() {
             runtime_connect,
             runtime_reconnect,
             runtime_stop,
-            runtime_startup
+            runtime_startup,
+            voice_configure,
+            voice_devices,
+            voice_control
         ])
         .run(tauri::generate_context!())
         .expect("JARVIS desktop failed to start");

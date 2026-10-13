@@ -2,6 +2,7 @@ pub mod daemon;
 pub mod ipc;
 pub mod platform;
 pub mod storage;
+pub mod voice;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::time::Duration;
@@ -25,6 +26,8 @@ pub enum State {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Status {
+    #[serde(default)]
+    pub voice: jarvis_voice::VoiceStatus,
     pub version: u8,
     pub instance_id: Uuid,
     pub runtime_version: String,
@@ -45,6 +48,7 @@ pub struct Status {
 impl Default for Status {
     fn default() -> Self {
         Self {
+            voice: jarvis_voice::VoiceStatus::default(),
             version: 1,
             instance_id: Uuid::new_v4(),
             runtime_version: env!("CARGO_PKG_VERSION").into(),
@@ -66,9 +70,9 @@ impl Default for Status {
 }
 impl Status {
     pub fn report(&self) -> Value {
-        json!({"version":1,"runtimeProtocolVersion":1,"instanceId":self.instance_id,"runtimeVersion":self.runtime_version,"build":option_env!("JARVIS_BUILD").unwrap_or("development"),"platform":if cfg!(target_os="macos") {"macos"} else {"windows"},"architecture":if cfg!(target_arch="aarch64") {"arm64"} else {"x64"},"startedAt":self.started_at,"state":self.state,"startup":self.startup,"wakeGeneration":self.wake_generation,"executionAvailable":false,"capabilities":{
+        json!({"version":1,"runtimeProtocolVersion":2,"instanceId":self.instance_id,"runtimeVersion":self.runtime_version,"build":option_env!("JARVIS_BUILD").unwrap_or("development"),"platform":if cfg!(target_os="macos") {"macos"} else {"windows"},"architecture":if cfg!(target_arch="aarch64") {"arm64"} else {"x64"},"startedAt":self.started_at,"state":self.state,"startup":self.startup,"wakeGeneration":self.wake_generation,"executionAvailable":false,"capabilities":{
             "runtime.lifecycle":"AVAILABLE","runtime.health":"AVAILABLE","runtime.secure_identity":if self.device_id.is_some(){"AVAILABLE"}else{"PERMISSION_REQUIRED"},"runtime.realtime":if self.state==State::Online{"AVAILABLE"}else{"DEGRADED"},"runtime.autostart":match self.startup.as_str(){"ENABLED"=>"AVAILABLE","APPROVAL_REQUIRED"=>"PERMISSION_REQUIRED","UNAVAILABLE"=>"UNAVAILABLE",_=>"DISABLED"},"runtime.sleep_wake":if self.platform_observer{"AVAILABLE"}else{"DEGRADED"},
-            "voice.wake_word":"UNAVAILABLE","audio.capture":"UNAVAILABLE","screen.capture":"UNAVAILABLE","computer.keyboard":"UNAVAILABLE","computer.mouse":"UNAVAILABLE","computer.apps":"UNAVAILABLE","computer.shell":"UNAVAILABLE","remote.desktop":"UNAVAILABLE"}})
+            "voice.wake_word":if !self.voice.settings.enabled {"DISABLED"}else if self.voice.wake_ready&&self.voice.microphone {"AVAILABLE"}else{"DEGRADED"},"audio.capture":if self.voice.microphone{"AVAILABLE"}else if self.voice.phase==jarvis_voice::Phase::PermissionRequired{"PERMISSION_REQUIRED"}else{"DISABLED"},"screen.capture":"UNAVAILABLE","computer.keyboard":"UNAVAILABLE","computer.mouse":"UNAVAILABLE","computer.apps":"UNAVAILABLE","computer.shell":"UNAVAILABLE","remote.desktop":"UNAVAILABLE"}})
     }
 }
 pub fn status() -> Status {
@@ -117,8 +121,6 @@ mod tests {
         let r = s.report();
         assert_eq!(r["executionAvailable"], false);
         for n in [
-            "voice.wake_word",
-            "audio.capture",
             "screen.capture",
             "computer.shell",
             "computer.keyboard",

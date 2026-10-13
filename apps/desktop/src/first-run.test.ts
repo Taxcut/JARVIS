@@ -7,11 +7,10 @@ it('renders an honest disconnected first run without operational fixtures', () =
   for (const text of [
     'Begin Setup',
     'Not connected',
-    'Sign in to view devices',
-    'No missions yet',
-    'Voice not configured',
-    'Phone Link not configured',
-    'Sign in to view security',
+    'AWAITING CONNECTION',
+    'MICROPHONE OFF',
+    'No conversation has been recorded.',
+    'Your microphone is off.',
   ])
     expect(html).toContain(text);
   expect(html).not.toContain('Connected · database ready');

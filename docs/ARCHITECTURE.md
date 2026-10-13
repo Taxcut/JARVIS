@@ -36,10 +36,28 @@ A single bounded minute maintenance task expires security records, clears challe
 
 ## Preserved future boundaries
 
-- Voice: local **sherpa-onnx**, wake arbitration and OpenAI Realtime conversation, with a separate planned Kokoro synthesis adapter for the owner-selected `bm_george` output; documentation only in this phase. See VOICE and OWNER_CONFIGURATION.
+- Voice: local **sherpa-onnx** wake and streaming STT, Qwen3 4B Instruct through local Ollama, and Kokoro `bm_george`; implemented on the Phase 4 branch and still in physical validation. See VOICE and OWNER_CONFIGURATION.
 - Remote: native capture/encoding/secure transport; no implementation.
 - Computer control: future native APIs, Accessibility/UI Automation and narrowly authorized tool adapters. No privileged IPC exists today.
 - Browser automation, LiveKit/Twilio phone/SMS, semantic memory/pgvector, missions and automations remain separate later work.
 - AURA remains a distinct product with an explicit delegated Control API and no inherited JARVIS authority.
 
 Closing the desktop stops neither the independent runtime nor separately started Core. Explicit login startup registers only the user-session native runtime; Core/PostgreSQL lifecycle and future deployment remain separate. See RUNTIME for supervision, platform choices and failure boundaries. JARVIS defaults to addressing the owner as Sir. Overall product setup remains false: identity completion does not imply voice/phone/remote/deployment readiness. Fresh installs seed no operational records.
+
+## Phase 4 feature-branch implementation
+
+The prior planned-only voice boundary is now implemented behind `crates/voice`.
+The existing per-user runtime owns CPAL audio, sherpa-onnx wake detection, Sonora
+echo cancellation and local Kokoro synthesis. Model work runs outside callbacks;
+local model I/O is asynchronous through a fixed loopback adapter. The retained
+optional cloud broker is not invoked by the default runtime. React can configure declared settings
+and observe bounded local status; it receives neither provider keys nor microphone
+samples. Core remains the current security authority; local conversation does not bypass
+its ONLINE/NORMAL requirement. Optional cloud code retains its credential broker. No database
+migration or operational fixtures are introduced by voice.
+
+Native output telemetry drives the procedural Three.js presence. Rendering stops
+when hidden/offscreen; quality and reduced-motion preferences are local. Startup
+respects actual readiness. An isolated visual entry supports synthetic state
+regression without adding test data to the product. See VOICE and DESIGN for exact
+boundaries and remaining physical acceptance.

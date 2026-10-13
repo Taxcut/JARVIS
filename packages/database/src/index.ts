@@ -66,7 +66,7 @@ export function createDatabase(url: string) {
         core: row[0]?.coreVerified ? 'verified' : 'not_configured',
         owner: owner ? 'ready' : 'required',
         deviceEnrollment: enrolled ? 'ready' : 'required',
-        voice: 'not_implemented',
+        voice: 'device_setup_required',
         phoneLink: 'not_implemented',
         security: !owner
           ? 'setup_required'

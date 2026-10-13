@@ -71,3 +71,28 @@ Signed runtime-only `POST /api/v1/runtime/register`, `/heartbeat` and `/stop` ac
 Snapshots include `runtimePresence`, independently of device enrollment. Each row contains a server-issued revision, last-seen and expiry. Expired leases project OFFLINE immediately; revoked devices project REVOKED, invalid sessions AUTH_REQUIRED. One current row per device avoids heartbeat history growth. Changes share the existing bounded replay stream. The worker requests sequence zero after every reconnect/wake, validates the authoritative snapshot and subsequent ordered batches, then renews presence. Sync data is never executable instruction.
 
 The local IPC protocol is length-prefixed JSON, maximum 16 KiB, with a closed command set. Native startup/start controls choose fixed OS mechanisms and a bundled helper; callers cannot provide executable paths, process IDs or shell text. The dashboard polls local health only while its runtime panel is mounted; authoritative product state still uses Core WebSocket events.
+
+## Phase 4 voice protocol
+
+Runtime protocol 2 is required for voice; older helpers are update-required.
+The retained optional-cloud `POST /api/v1/voice/session` accepts only an empty strict object under a signed
+current runtime session. NORMAL device/owner state is rechecked after upstream
+issuance. The response contains version 1, short-lived value, Unix-second expiry,
+allowlisted model, correlation ID and `executionAvailable: false`. Native consumes
+it directly; it is not a general desktop/React API. Rate limit: six per minute per
+device. Provider failures use safe structured Core errors.
+
+The local runtime status has typed version-1 voice phase/settings/readiness,
+permission, capture/cloud indicators, bounded transcripts, amplitude/bands and
+wake/first-output observations. Transcripts are not part of Core presence/events.
+The private IPC command allowlist adds voice configure/retry/clear/greet. Settings
+are Zod/Rust validated; the 16 KiB reply limit is unchanged. Shared schemas live in
+`packages/protocol/src/voice.ts`. Global setup remains incomplete; voice device
+setup and physical acceptance must not be inferred from Core health.
+
+The local-default runtime does not call the cloud broker. Voice status adds
+`sttReady`, `localModel` (NOT_LOADED/NOT_INSTALLED/LOADING/READY/DEGRADED/ERROR) and
+`lastFirstTokenMs`; default `cloudAudio` remains false. `providerConnected` refers
+to the current local conversation adapter, not Internet reachability. Model
+results never enter Core audit/sync payloads. Local model requests accept bounded
+text only at a fixed loopback endpoint, have no tools and confer no authority.

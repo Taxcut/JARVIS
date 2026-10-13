@@ -97,8 +97,8 @@ async fn connect(client: &mut NativeClient, status: &mut Status) -> Result<Socke
         .runtime_api(&base, "GET", "/api/v1/runtime/compatibility", Value::Null)
         .await?;
     if compatibility["version"] != 1
-        || compatibility["runtimeProtocolVersion"] != 1
-        || compatibility["minimumRuntimeProtocolVersion"] != 1
+        || compatibility["runtimeProtocolVersion"] != 2
+        || compatibility["minimumRuntimeProtocolVersion"] != 2
         || compatibility["executionAvailable"] != false
     {
         return Err("Runtime update required".into());
@@ -225,6 +225,11 @@ pub async fn run(directory: PathBuf, mut events: mpsc::Receiver<Event>) -> io::R
     };
     let (state_tx, state_rx) = watch::channel(status.clone());
     let (control_tx, mut controls) = mpsc::channel::<Control>(8);
+    let (voice_tx, mut voice_requests) =
+        mpsc::channel::<jarvis_voice::controller::CredentialRequest>(2);
+    let voice = crate::voice::start(&directory, voice_tx);
+    let mut voice_clock = tokio::time::interval(Duration::from_millis(100));
+    voice_clock.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     let mut ipc = tokio::spawn(crate::ipc::serve(directory, control_tx, state_rx));
     // Keychain may require owner approval. The IPC listener remains live during this OS operation.
     let mut client = tokio::task::spawn_blocking(NativeClient::load_runtime)
@@ -245,16 +250,43 @@ pub async fn run(directory: PathBuf, mut events: mpsc::Receiver<Event>) -> io::R
     let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     log.event("RUNTIME_STARTED", status.state);
     loop {
+        voice.authority(
+            status.state == State::Online && status.security_state.as_deref() == Some("NORMAL"),
+            if status.security_state.as_deref() == Some("LOCKDOWN") {
+                jarvis_voice::Phase::Lockdown
+            } else if sleeping {
+                jarvis_voice::Phase::Suspended
+            } else {
+                jarvis_voice::Phase::AuthRequired
+            },
+        );
+        status.voice = voice.snapshot();
         state_tx.send_replace(status.clone());
         tokio::select! {
-            _=async{#[cfg(unix)]{terminate.recv().await;}#[cfg(not(unix))]{std::future::pending::<()>().await;}}=>{stop(&mut client,&mut status).await;break;},
-            _=tokio::signal::ctrl_c()=>{stop(&mut client,&mut status).await;break;},
+            _=async{#[cfg(unix)]{terminate.recv().await;}#[cfg(not(unix))]{std::future::pending::<()>().await;}}=>{voice.authority(false,jarvis_voice::Phase::Suspended);stop(&mut client,&mut status).await;break;},
+            _=tokio::signal::ctrl_c()=>{voice.authority(false,jarvis_voice::Phase::Suspended);stop(&mut client,&mut status).await;break;},
             result=&mut ipc=>{result.map_err(|_|io::Error::other("IPC task failed"))??;return Err(io::Error::other("IPC task stopped"));},
+            _=voice_clock.tick()=>{},
+            Some(request)=voice_requests.recv()=>{
+                let result=if status.state==State::Online && status.security_state.as_deref()==Some("NORMAL") {
+                    if let Some(c)=&mut client {let base=c.saved_core().unwrap_or_default();
+                        match tokio::time::timeout(Duration::from_secs(10),c.runtime_api(&base,"POST","/api/v1/voice/session",json!({}))).await {
+                            Ok(Ok(value))=>jarvis_voice::provider::Credential::parse(value),
+                            _=>Err("Voice provider is unavailable or not configured. Check Core settings.")
+                        }
+                    }else{Err("Voice requires a trusted runtime")}
+                }else{Err("Voice requires a trusted runtime")};
+                let _=request.reply.send(result);
+            },
             Some(control)=controls.recv()=>{
                 let mut error=None;
                 match control.command {
                     Command::Status {}=>{},
-                    Command::Stop {}=>{stop(&mut client,&mut status).await;let _=control.reply.send(Reply{status:Some(status.clone()),error:None});let _=tokio::time::timeout(Duration::from_secs(3),control.delivered).await;break;},
+                    Command::VoiceConfigure{settings}=>{error=voice.command(jarvis_voice::controller::Command::Configure(settings)).err().map(str::to_string);},
+                    Command::VoiceRetry{}=>{error=voice.command(jarvis_voice::controller::Command::Retry).err().map(str::to_string);},
+                    Command::VoiceClear{}=>{error=voice.command(jarvis_voice::controller::Command::Clear).err().map(str::to_string);},
+                    Command::VoiceGreet{}=>{error=voice.command(jarvis_voice::controller::Command::Greet).err().map(str::to_string);},
+                    Command::Stop {}=>{voice.authority(false,jarvis_voice::Phase::Suspended);stop(&mut client,&mut status).await;let _=control.reply.send(Reply{status:Some(status.clone()),error:None});let _=tokio::time::timeout(Duration::from_secs(3),control.delivered).await;break;},
                     Command::Reconnect {}=>{
                         socket=None;status.state=State::Connecting;
                         // Re-read only on explicit owner retry; never loop on OS prompts.
@@ -276,12 +308,12 @@ pub async fn run(directory: PathBuf, mut events: mpsc::Receiver<Event>) -> io::R
                 match lifecycle(&mut status,event) {
                     Lifecycle::Observe=>{},
                     Lifecycle::Suspend=>{
-                        sleeping=true;
+                        sleeping=true;voice.authority(false,jarvis_voice::Phase::Suspended);
                         if let Some(c)=&mut client {if let Some(base)=c.saved_core(){let _=tokio::time::timeout(Duration::from_secs(2),c.runtime_api(&base,"POST","/api/v1/runtime/heartbeat",status.report())).await;}}
                         socket=None;next=None;log.event("SESSION_SUSPENDING",status.state);
                     },
                     Lifecycle::Reconnect=>{sleeping=false;socket=None;next=Some(Instant::now()+Duration::from_millis(500));log.event("SESSION_RESUMING",status.state);},
-                    Lifecycle::Shutdown=>{stop(&mut client,&mut status).await;break;}
+                    Lifecycle::Shutdown=>{voice.authority(false,jarvis_voice::Phase::Suspended);stop(&mut client,&mut status).await;break;}
                 }
             },
             _=async{if let Some(deadline)=next{tokio::time::sleep_until(deadline).await}else{std::future::pending::<()>().await}},if !sleeping=>{

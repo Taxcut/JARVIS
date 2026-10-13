@@ -270,9 +270,13 @@ it('isolates runtime authority, stores bounded presence, rejects future capabili
     (await call('/api/v1/runtime/compatibility', {}, 'GET')).json()
       .executionAvailable,
   ).toBe(false);
+  expect((await call('/api/v1/voice/session', {})).statusCode).toBe(503);
+  expect(
+    (await call('/api/v1/voice/session', { model: 'untrusted' })).statusCode,
+  ).toBe(400);
   const report = {
     version: 1,
-    runtimeProtocolVersion: 1,
+    runtimeProtocolVersion: 2,
     instanceId: randomUUID(),
     runtimeVersion: '0.3.0',
     build: 'development',
@@ -308,7 +312,7 @@ it('isolates runtime authority, stores bounded presence, rejects future capabili
     (
       await call('/api/v1/runtime/register', {
         ...report,
-        runtimeProtocolVersion: 2,
+        runtimeProtocolVersion: 3,
       })
     ).statusCode,
   ).toBe(426);

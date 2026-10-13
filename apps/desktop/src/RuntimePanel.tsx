@@ -1,3 +1,4 @@
+import { Notice } from './Notice.js';
 import { useEffect, useState } from 'react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { z } from 'zod';
@@ -33,7 +34,9 @@ export function RuntimePanel({
   diagnostics?: boolean;
 }) {
   const [local, setLocal] = useState<Local | null>(null),
-    [startup, setStartup] = useState('NOT_CONFIGURED'),
+    [startup, setStartup] = useState('CHECKING'),
+    [checking, setChecking] = useState(isTauri()),
+    [readFailed, setReadFailed] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [time, setTime] = useState(Date.now());
@@ -53,13 +56,15 @@ export function RuntimePanel({
           setLocal(state ? localSchema.parse(state) : null);
           setStartup(start);
           setTime(Date.now());
+          setReadFailed(false);
         }
       } catch {
         if (!closed) {
           setLocal(null);
-          setError('Local runtime status could not be read.');
+          setReadFailed(true);
         }
       } finally {
+        if (!closed) setChecking(false);
         pending = false;
       }
     };
@@ -102,11 +107,19 @@ export function RuntimePanel({
       <div>
         <div className="eyebrow">BACKGROUND RUNTIME</div>
         <h2>
-          {local ? local.state.replaceAll('_', ' ') : 'Runtime not running'}
+          {!isTauri()
+            ? 'Native app required'
+            : checking
+              ? 'Checking runtime…'
+              : readFailed
+                ? 'Runtime status unavailable'
+                : local
+                  ? local.state.replaceAll('_', ' ')
+                  : 'Runtime not running'}
         </h2>
         <p>
-          Your runtime stays active when this dashboard closes. Voice and
-          computer execution are unavailable.
+          Your runtime stays active when this dashboard closes. Voice runs here
+          when enabled. Computer execution remains unavailable.
         </p>
         {!isTauri() ? (
           <p>Open the native JARVIS desktop to manage this device’s runtime.</p>
@@ -124,28 +137,30 @@ export function RuntimePanel({
             <div className="actions">
               <button
                 className="secondary"
-                disabled={busy || !!local}
+                disabled={checking || readFailed || busy || !!local}
                 onClick={() => void action('runtime_start')}
               >
                 Start runtime
               </button>
               <button
                 className="secondary"
-                disabled={busy || !local || !authenticated}
+                disabled={
+                  checking || readFailed || busy || !local || !authenticated
+                }
                 onClick={() => void action('runtime_connect', { base })}
               >
                 Connect runtime to Core
               </button>
               <button
                 className="secondary"
-                disabled={busy || !local}
+                disabled={checking || readFailed || busy || !local}
                 onClick={() => void action('runtime_reconnect')}
               >
                 Reconnect runtime
               </button>
               <button
                 className="secondary"
-                disabled={busy || !local}
+                disabled={checking || readFailed || busy || !local}
                 onClick={() => void action('runtime_stop')}
               >
                 Stop runtime
@@ -155,7 +170,11 @@ export function RuntimePanel({
               <button
                 className="secondary"
                 disabled={
-                  busy || startup === 'ENABLED' || startup === 'UNAVAILABLE'
+                  checking ||
+                  readFailed ||
+                  busy ||
+                  startup === 'ENABLED' ||
+                  startup === 'UNAVAILABLE'
                 }
                 onClick={() => void action('runtime_startup', { enable: true })}
               >
@@ -164,7 +183,10 @@ export function RuntimePanel({
               <button
                 className="secondary"
                 disabled={
-                  busy || !['ENABLED', 'APPROVAL_REQUIRED'].includes(startup)
+                  checking ||
+                  readFailed ||
+                  busy ||
+                  !['ENABLED', 'APPROVAL_REQUIRED'].includes(startup)
                 }
                 onClick={() =>
                   void action('runtime_startup', { enable: false })
@@ -192,37 +214,14 @@ export function RuntimePanel({
             </p>
           </>
         )}
-        {diagnostics && local && (
-          <dl>
-            <dt>Runtime version / instance</dt>
-            <dd>
-              {local.runtimeVersion} / {local.instanceId}
-            </dd>
-            <dt>Started</dt>
-            <dd>{new Date(local.startedAt).toLocaleString()}</dd>
-            <dt>Last Core connection</dt>
-            <dd>
-              {local.lastConnectedAt
-                ? new Date(local.lastConnectedAt).toLocaleString()
-                : 'Not connected'}
-            </dd>
-            <dt>Last heartbeat</dt>
-            <dd>
-              {local.lastHeartbeatAt
-                ? new Date(local.lastHeartbeatAt).toLocaleString()
-                : 'Not reported'}
-            </dd>
-            <dt>Reconnect attempt / wake generation</dt>
-            <dd>
-              {local.reconnectAttempt} / {local.wakeGeneration}
-            </dd>
-            <dt>OS lifecycle observer</dt>
-            <dd>{local.platformObserver ? 'Available' : 'Unavailable'}</dd>
-            <dt>Last error</dt>
-            <dd>{local.lastError ?? 'None'}</dd>
-          </dl>
-        )}
-        <div role="status">{error && <p className="error">{error}</p>}</div>
+        {diagnostics && local && <RuntimeDiagnostics local={local} />}
+        <Notice
+          message={
+            readFailed
+              ? 'Local runtime status could not be read. Retrying automatically.'
+              : error
+          }
+        />
         {snapshot?.devices.map((device) => {
           const presence = snapshot.runtimePresence?.find(
             (r) => r.deviceId === device.id,
@@ -264,5 +263,39 @@ export function RuntimePanel({
         })}
       </div>
     </section>
+  );
+}
+
+/** Read-only rendering, shared with isolated visual checks. */
+export function RuntimeDiagnostics({ local }: { local: Local }) {
+  return (
+    <dl className="runtime-diagnostics">
+      <dt>Runtime version / instance</dt>
+      <dd>
+        {local.runtimeVersion} / {local.instanceId}
+      </dd>
+      <dt>Started</dt>
+      <dd>{new Date(local.startedAt).toLocaleString()}</dd>
+      <dt>Last Core connection</dt>
+      <dd>
+        {local.lastConnectedAt
+          ? new Date(local.lastConnectedAt).toLocaleString()
+          : 'Not connected'}
+      </dd>
+      <dt>Last heartbeat</dt>
+      <dd>
+        {local.lastHeartbeatAt
+          ? new Date(local.lastHeartbeatAt).toLocaleString()
+          : 'Not reported'}
+      </dd>
+      <dt>Reconnect attempt / wake generation</dt>
+      <dd>
+        {local.reconnectAttempt} / {local.wakeGeneration}
+      </dd>
+      <dt>OS lifecycle observer</dt>
+      <dd>{local.platformObserver ? 'Available' : 'Unavailable'}</dd>
+      <dt>Last error</dt>
+      <dd>{local.lastError ?? 'None'}</dd>
+    </dl>
   );
 }
